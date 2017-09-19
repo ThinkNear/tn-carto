@@ -1,0 +1,326 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>Think Near POC</title>
+<!--   <link href="//cartodb-libs.global.ssl.fastly.net/cartodbui/assets/3.4.9/favicons/favicon.ico?1411985985" rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
+
+  <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
+
+  <!-- <link href="styleguide.css" media="screen" rel="stylesheet" type="text/css" /> -->
+  <link href="app.css" media="screen" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/themes/css/cartodb.css" />
+  <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/cartodb.js"></script>
+  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.2/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.2/js/select2.min.js"></script> -->
+  <!--[if lte IE 8]>
+    <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v2/themes/css/cartodb.ie.css" />
+  <![endif]-->
+<link rel="stylesheet" type="text/css" href="semantic/dist/semantic.min.css">
+<script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+<script src="semantic/dist/semantic.min.js"></script>
+<script src="semantic/dist/components/dropdown.js"></script>
+<link rel="stylesheet" type="text/css" href="semantic/dist/components/dropdown.min.css">
+
+<script>
+    var map;
+    var defaultCartocss = "\
+#layer {\
+  polygon-fill: #fff;\
+  polygon-opacity: 0.7;\
+}\
+#layer::outline {\
+  line-width: 1;\
+  line-color: #a4a4a4;\
+  line-opacity: 0.7;\
+  line-dasharray: 4, 4;\
+}"
+
+    function generateCartoCSS(study) {
+      if (study === "none") {
+        return defaultCartocss;
+      } else {
+        var newCartocss = "\
+#layer {\
+  polygon-fill: #fff;\
+  polygon-opacity: 0.7;\
+}\
+#layer::outline {\
+  line-width: 1;\
+  line-color: #a4a4a4;\
+  line-opacity: 0.7;\
+  line-dasharray: 4, 4;\
+}"
+        var comboCartocss = defaultCartocss + newCartocss;
+        console.log(comboCartocss);
+        return comboCartocss;
+      }
+    }
+
+    function init(){
+      
+      // initiate leaflet map. Change center and zoom for new demos.
+        map = new L.Map('map', { 
+        center: [39.8283459,-98.5794797],
+        zoom: 4,
+        zoomControl: false
+      })
+
+new L.Control.Zoom({ position: 'bottomleft' }).addTo(map);
+
+      var basemap = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CARTO</a>'
+      }).addTo(map);
+
+      //var layerUrl = 'https://team.cartodb.com/u/mforrest/api/v2/viz/9b6b94c6-0982-4fe3-9a76-936a859c2fff/viz.json';
+      var layers = {
+          'blocks': {
+            sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo WHERE cartodb_id < 0',
+            cartocss: '#layer { polygon-fill: red; }'
+          },
+          'buffers': {
+            sql: 'SELECT * FROM tn_10km',
+            cartocss: '#layer { polygon-fill: red; }'
+          }
+        };
+
+      cartodb.createLayer(map,{
+            user_name: 'mforrest',
+            type: 'cartodb',
+            sublayers: [ 
+            {
+            sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo WHERE cartodb_id < 0',
+            cartocss: '#layer { polygon-fill: blue; }'
+            },
+            {
+            sql: 'SELECT * FROM tn_10km',
+            cartocss: '#layer { polygon-fill: red; }'
+            }]
+            },
+            {https: true})
+        .addTo(map)
+        .done(function(layer) {
+          mapSubLayer = layer.getSubLayer(1);//for setCartoCSS calls later
+          mapSubLayer2 = layer.getSubLayer(0);
+          console.log(mapSubLayer);
+          //console.log(mapSubLayer2);
+        }).on('error', function(err) {
+          //log the error
+          console.log("an error occured: " + err);
+        });
+      $("#button").click(function() {
+        var distance = $("#distance").val();
+        console.log(distance);
+
+        var brand = $("#brand").val();
+        console.log(brand);
+
+        var income = $("#income").val();
+        console.log(income);
+
+        switch (true) {
+
+          //if user=none and capture=null, do nothing/reset to initial view
+          case (distance === 'none' && brand === 'none'):
+            console.log("You have not selected anything!");
+            mapSubLayer.set({
+              'sql': "with a as (SELECT sum(hcdisbursements.amount), hcdisbursements.state FROM hcdisbursements GROUP BY hcdisbursements.state) select a.sum, usac_state.the_geom, usac_state.state, usac_state.the_geom_webmercator, usac_state.cartodb_id FROM usac_state LEFT JOIN a ON usac_state.state = a.state",
+              'cartocss': generateCartoCSS(distance)
+            })
+            break;
+
+          //if user!=none and capture=null, do cartocss
+          case (distance !== 'none' && brand === 'none'):
+            console.log("You selected a distance but not a year");
+            mapSubLayer.setSQL("SELECT * FROM mforrest.tn_10km WHERE distace IN (" + distance.join(',') + ")");
+            mapSubLayer.setCartoCSS(generateCartoCSS(distance));
+            break;
+
+          //if user=none and capture!=null, do sql
+          case (distance === 'none' && brand !== null):
+            console.log("You didn't select a distance but did pick year");
+            mapSubLayer.setSQL("SELECT * FROM mforrest.tn_10km WHERE brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')");
+            mapSubLayer.setCartoCSS(generateCartoCSS(distance));
+            break;
+
+          case (distance !== 'none' && brand !== 'none' ):
+            console.log("You selected both!");
+            //console.log("'" + distance.join("'" + ',' + "'") + "'");
+            //console.log("'" + brand.join("'" + ',' + "'") + "'");
+            mapSubLayer2.set({
+              'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo WHERE income_category IN ("+ "'" + income.join("'" + ',' + "'") + "')",
+              'cartocss': "#layer { polygon-fill: ramp([income_category], cartocolor(Safe), category(3)); polygon-opacity: 0.5;}"
+            });
+            mapSubLayer.set({
+              'sql': "SELECT * FROM mforrest.tn_10km WHERE distance IN ("+ "'" + distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+              'cartocss': generateCartoCSS(distance)
+            });
+            
+            break;
+        }
+
+
+      });
+    }
+
+  </script>
+</head>
+
+<body onload="init()">
+
+<!-- SIDEBAR -->
+
+<div class='app-menu'>
+<div class='app-icon'>
+</div>
+</div>
+
+<!-- MAP -->
+
+<div class='fullSize' id='map'></div>
+
+<div id='toolbar'>
+
+
+
+<!-- <select id="userIDSelect" class="ui multiple dropdown">
+    <option value="ICLS">ICLS</option>
+    <option value="2015">2015</option>
+</select> -->
+
+<select id="brand" class="ui multiple search dropdown brand" multiple="">
+</select>
+
+<br></br>
+
+<select id="distance" class="ui multiple dropdown distance" multiple="">
+  <option value="1KM">1KM</option>
+  <option value="2KM">2KM</option>
+  <option value="5KM">5KM</option>
+  <option value="10KM">10KM</option>
+</select>
+
+<br></br>
+
+<select id="income" class="ui multiple search dropdown income" multiple="">
+</select>
+
+<br></br>
+
+
+<!-- <button class="ui primary button" id="#button">
+<a href="#" style="color: white;">Visualize</a>
+</button>
+ -->
+
+<p id="button" class="button button--blue">
+<button  class="ui primary button">
+<a style="color:white;" href="#">Visualize</a>
+</button>       
+</p>
+
+
+
+
+
+
+
+</div>
+<!-- TOOLBAR --> 
+</div>
+
+
+<script>
+
+// $('.ui.multiple.dropdown').dropdown({ 
+//   fields: {name: "name", value: "value"}, 
+//   apiSettings: {
+//       mockResponse: {
+//         success: true,
+//         results: [
+//             {"name":"ICLS","value":"ICLS"},
+//             {"name":"HCL","value":"HCL"}]
+//     },
+//     onResponse: function(test) {
+//       var results = [
+//             {"name":"ICLS","value":"ICLS"},
+//             {"name":"HCL","value":"HCL"}]
+//             console.log(results)
+//           }
+//       //url: 'https://mforrest.cartodb.com/api/v2/sql?q=%20SELECT%20year%20as%20name,%20year%20as%20value%20FROM%20hcdisbursements%20GROUP%20BY%20year'   
+//   }
+// })
+// ;
+
+$('.ui.multiple.dropdown.brand').dropdown({ 
+  maxSelections: 5,
+  fields: { name: "name", value: "value" },
+  apiSettings: {
+      cache: false,
+      onResponse: function(cartoResponse) {
+          var response = {
+            results: {}
+          };
+          console.log(response);
+          $.each(cartoResponse.rows, function(row) {
+          var i, x = ""
+          for (i in response) {
+            x = response[i]
+          }
+          });
+          response = {
+            "success": true,
+            "results": cartoResponse.rows
+          },
+          console.log(response);
+          return response;
+
+    },
+    url: 'https://mforrest.cartodb.com/api/v2/sql?q=SELECT%20brand_label%20as%20name,%20brand_label%20as%20value%20from%20tn_10km%20group%20by%20brand_label%20order%20by%20brand_label%20asc',
+    },
+    saveRemoteData: false,
+    filterRemoteData: true,
+    dataType: JSON
+  });
+
+$('.ui.multiple.dropdown.distance').dropdown();
+
+$('.ui.multiple.dropdown.income').dropdown({ 
+  maxSelections: 5,
+  fields: { name: "name", value: "value" },
+  apiSettings: {
+      cache: false,
+      onResponse: function(cartoResponse) {
+          var response = {
+            results: {}
+          };
+          console.log(response);
+          $.each(cartoResponse.rows, function(row) {
+          var i, x = ""
+          for (i in response) {
+            x = response[i]
+          }
+          });
+          response = {
+            "success": true,
+            "results": cartoResponse.rows
+          },
+          console.log(response);
+          return response;
+
+    },
+    url: 'https://mforrest.cartodb.com/api/v2/sql?q=SELECT%20income_category%20as%20name,%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo%20group%20by%20income_category%20order%20by%20income_category%20asc',
+    },
+    saveRemoteData: false,
+    filterRemoteData: true,
+    dataType: JSON
+  });
+
+
+</script>
+</body>
+</html>
