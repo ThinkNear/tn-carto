@@ -32,37 +32,7 @@
 <link rel="stylesheet" type="text/css" href="semantic/dist/components/dropdown.min.css">
 
 <script>
-    var map;
-    var defaultCartocss = "\
-#layer {\
-  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E), category(4));\
-  opacity: 0.5;\
-}\
-#layer::outline {\
-  line-width: 1;\
-  line-color: #FFF;\
-  line-opacity: 0.5;\
-}"
-
-    function generateCartoCSS(study) {
-      if (study === "none") {
-        return defaultCartocss;
-      } else {
-        var newCartocss = "\
-#layer {\
-  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E), category(4));\
-  opacity: 0.5;\
-}\
-#layer::outline {\
-  line-width: 1;\
-  line-color: #FFF;\
-  line-opacity: 0.5;\
-}"
-        var comboCartocss = defaultCartocss + newCartocss;
-        console.log(comboCartocss);
-        return comboCartocss;
-      }
-    }
+var map;   
 
 function init(){
       
@@ -174,7 +144,6 @@ var state_sql
 var zip_sql
 var listSQL = []
 
-
 if (income.length === 0) {
     var income_sql = null
 } else { 
@@ -233,6 +202,77 @@ if (zip.length === 0) {
 
 var joinedSQL = listSQL.join(" AND ");
 
+brandLegend = brand
+colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#63666A']
+
+function makeLegend(array) {
+    // Create the list element:
+    var list = document.createElement('ul');
+    list.setAttribute("class", "legend-ul");
+
+    for(var i = 0; i < array.length; i++) {
+        // Create the list item:
+        var main = document.getElementById('legend-main');
+        main.setAttribute("style", "display: initial");
+
+        var span = document.createElement('span');
+        span.setAttribute("class", "legend-circle");
+        span.setAttribute("style", "background-color: " + colorsLegend[i] + "");
+        
+        var item = document.createElement('p');
+        item.setAttribute("class", "legend-text");
+        item.innerHTML = brandLegend[i];
+        // Add it to the list:
+
+        list.appendChild(span);
+        list.appendChild(item);
+    }
+    console.log(list);
+    return list
+}
+
+var list = document.getElementById('legend-dynamic');     
+list.innerHTML = "";                            
+list.appendChild(makeLegend(brand));
+
+var $set = $('ul.legend-ul').children();    
+for(var i=0, len = $set.length; i < len; i+=2){
+    $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
+}   
+
+
+
+var defaultCartocss = "\
+#layer {\
+  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
+  opacity: 0.5;\
+}\
+#layer::outline {\
+  line-width: 1;\
+  line-color: #FFF;\
+  line-opacity: 0.5;\
+}"
+
+function generateCartoCSS(study) {
+  if (study === "none") {
+    return defaultCartocss;
+  } else {
+    var newCartocss = "\
+#layer {\
+  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
+  opacity: 0.5;\
+}\
+#layer::outline {\
+  line-width: 1;\
+  line-color: #FFF;\
+  line-opacity: 0.5;\
+}"
+
+var comboCartocss = defaultCartocss + newCartocss;
+console.log(comboCartocss);
+return comboCartocss;
+}
+}
 
 
         switch (true) {
@@ -291,7 +331,14 @@ var joinedSQL = listSQL.join(" AND ");
 
 <!-- MAP -->
 
-<div class='fullSize' id='map'></div>
+<div class='fullSize' id='map'>
+<div class="legend" id="legend-main" style="display: none;">
+<div class="legend-inner" id="legend-dynamic">
+
+
+</div>
+</div>
+</div>
 
 <div id='toolbar'>
 
