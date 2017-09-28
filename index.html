@@ -4,15 +4,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
   <title>Think Near POC</title>
-<!--   <link href="//cartodb-libs.global.ssl.fastly.net/cartodbui/assets/3.4.9/favicons/favicon.ico?1411985985" rel="shortcut icon" type="image/vnd.microsoft.icon" /> -->
 
   <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600" rel="stylesheet">
 
-
-
-
-  <!-- <link href="styleguide.css" media="screen" rel="stylesheet" type="text/css" /> -->
   <link href="app.css" media="screen" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/themes/css/cartodb.css" />
   <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/cartodb.js"></script>
@@ -32,759 +27,698 @@
 <link rel="stylesheet" type="text/css" href="semantic/dist/components/dropdown.min.css">
 
 <script>
-var map;   
+  var map;
 
-function init(){
-      
-      // initiate leaflet map. Change center and zoom for new demos.
-  map = new L.Map('map', { 
-  center: [39.833333,-98.583333],
-  zoom: 4,
-  zoomControl: false,
-})
+  function init(){
+    map = new L.Map('map', {
+      center: [39.833333,-98.583333],
+      zoom: 4,
+      zoomControl: false
+    });
 
-L.control.geocoder('mapzen-XagouUC', {
-  focus: true,
-  placeholder: 'Search',
-  position: 'topright', 
-  params: {
-    sources: 'whosonfirst',
-    'boundary.country': 'USA'
-  },
-  expanded: true
-}).addTo(map);
+    L.control.geocoder('mapzen-XagouUC', {
+      focus: true,
+      placeholder: 'Search',
+      position: 'topright',
+      params: {
+        sources: 'whosonfirst',
+        'boundary.country': 'USA'
+      },
+      expanded: true
+    }).addTo(map);
 
-new L.Control.Zoom({ position: 'bottomleft' }).addTo(map);
+    new L.Control.Zoom({ position: 'bottomleft' }).addTo(map);
 
-var basemap = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CARTO</a>'
-}).addTo(map);
+    var basemap = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+      attribution: '&copy;<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+                   '&copy;<a href="http://cartodb.com/attributions">CARTO</a>'
+    }).addTo(map);
 
+    cartodb.createLayer(map,{
+      user_name: 'thinknear-services',
+      type: 'carto',
+      sublayers: [
+        {
+          sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE cartodb_id < 0',
+          cartocss: '#layer { polygon-fill: blue; }'
+        },
+        {
+          sql: 'SELECT * FROM poi_data_buffers_unioned WHERE cartodb_id < 0',
+          cartocss: '#layer { polygon-fill: red; }'
+        }]
+      }, { https: true, tooltip: true })
+      .addTo(map)
+      .done(function(layer) {
+        var sublayer = layer.getSubLayer(1);
+        sublayer.setInteractivity('brand_label, width_category');
 
-      cartodb.createLayer(map,{
-            user_name: 'thinknear-services',
-            type: 'carto',
-            sublayers: [ 
-            {
-            sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE cartodb_id < 0',
-            cartocss: '#layer { polygon-fill: blue; }'
-            },
-            {
-            sql: 'SELECT * FROM poi_data_buffers_unioned WHERE cartodb_id < 0',
-            cartocss: '#layer { polygon-fill: red; }'
-            }]
-            },
-            {https: true, tooltip: true})
-        .addTo(map)
-        .done(function(layer) {
-          var sublayer = layer.getSubLayer(1);
-          sublayer.setInteractivity('brand_label, width_category');
+        sublayer.setInteraction(true);
+        var testTooltip = layer.leafletMap.viz.addOverlay({
+            type: 'tooltip',
+            layer: sublayer,
+            template: '<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4>' +
+                      '<h3>RADII</h3><h4>{{width_category}}</h4></div>',
+            position: 'top|right',
+            fields: [{brand_label: 'brand_label'}]
+          });
 
-          sublayer.setInteraction(true);
-          var testTooltip = layer.leafletMap.viz.addOverlay({
-                          type: 'tooltip',
-                          layer: sublayer,
-                          template: '<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4><h3>RADII</h3><h4>{{width_category}}</h4></div>', 
-                          position: 'top|right',
-                          fields: [{brand_label: 'brand_label'}]
-                        });  
-          $('body').append(testTooltip.render().el);
+        $('body').append(testTooltip.render().el);
 
-          mapSubLayer = layer.getSubLayer(1)
-                        // layer.getSubLayer(1).setInteraction(true),
-                        // cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(1), ['brand_label', 'width_category']);
-                        
+        mapSubLayer = layer.getSubLayer(1);
 
-
-          mapSubLayer2 = layer.getSubLayer(0),
-                         layer.getSubLayer(0).setInteraction(true),
-                        cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0), ['age_category', 'children_category', 'dma', 'ethnicity_category', 'income_category', 'st_abbrev', 'zip'],{
+        mapSubLayer2 = layer.getSubLayer(0),
+                       layer.getSubLayer(0).setInteraction(true),
+                       cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
+                        ['age_category', 'children_category', 'dma', 'ethnicity_category', 'income_category',
+                         'st_abbrev', 'zip'], {
                           infowindowTemplate: $('#iw_template_2').html()
-                        });
-  
-          //console.log(mapSubLayer2);
-        }).on('error', function(err) {
-          //log the error
-          console.log("an error occured: " + err);
-        });
-      $("#button").click(function() {
-        var distance = $("#distance").val();
-        console.log(distance);
+                       });
 
-        var brand = $("#brand").val();
-        console.log(brand);
+      }).on('error', function(err) {
+        console.log("an error occured: " + err);
+      });
 
-        var income = $("#income").val();
-        console.log(income);
+    $("#button").click(function() {
 
-        var age = $("#age").val();
-        console.log(age);
+      var distance = $("#distance").val();
+      var brand = $("#brand").val();
+      var income = $("#income").val();
+      var age = $("#age").val();
+      var dma = $("#dma").val();
+      var children = $("#children").val();
+      var ethnicity = $("#ethnicity").val();
+      var state = $("#state").val();
+      var zip = $("#zip").val();
 
-        var dma = $("#dma").val();
-        console.log(dma);
+      var age_sql;
+      var dma_sql;
+      var children_sql;
+      var ethnicity_sql;
+      var income_sql;
+      var state_sql;;
+      var zip_sql
+      var listSQL = [];
 
-        var children = $("#children").val();
-        console.log(children);
+      if (income.length === 0) {
+        var income_sql = null;
+      } else {
+        var income_sql = "income_category IN ("+ "'" + income.join("'" + ',' + "'") + "')";
+        listSQL.push(income_sql);
+      }
 
-        var ethnicity = $("#ethnicity").val();
-        console.log(ethnicity);
+      if (age.length === 0) {
+        var age_sql = null;
+      } else {
+        var age_sql = "age_category IN ("+ "'" + age.join("'" + ',' + "'") + "')";
+        listSQL.push(age_sql);
+      }
 
-        var state = $("#state").val();
-        console.log(state);
+      if (dma.length === 0) {
+        var dma_sql = null;
+      } else {
+        var dma_sql = "dma IN ("+ "'" + dma.join("'" + ',' + "'") + "')";
+        listSQL.push(dma_sql);
+      }
 
-        var zip = $("#zip").val();
-        console.log(zip);
+      if (ethnicity.length === 0) {
+        var ethnicity_sql = null;
+      } else {
+        var ethnicity_sql = "ethnicity_category IN ("+ "'" + ethnicity.join("'" + ',' + "'") + "')";
+        listSQL.push(income_sql);
+      }
 
-var age_sql
-var dma_sql
-var children_sql
-var ethnicity_sql
-var income_sql
-var state_sql
-var zip_sql
-var listSQL = []
+      if (children.length === 0) {
+        var children_sql = null;
+      } else {
+        var children_sql = "children_category IN ("+ "'" + children.join("'" + ',' + "'") + "')";
+        listSQL.push(children_sql);
+      }
 
-if (income.length === 0) {
-    var income_sql = null
-} else { 
-    var income_sql = "income_category IN ("+ "'" + income.join("'" + ',' + "'") + "')";
-    listSQL.push(income_sql);
-}
-console.log(income_sql)
+      if (state.length === 0) {
+        var state_sql = null;
+      } else {
+        var state_sql = "st_abrev IN ("+ "'" + state.join("'" + ',' + "'") + "')";
+        listSQL.push(state);
+      }
 
-if (age.length === 0) {
-    var age_sql = null
-} else { 
-    var age_sql = "age_category IN ("+ "'" + age.join("'" + ',' + "'") + "')"
-    listSQL.push(age_sql);
-}
-//console.log(age_sql)
+      if (zip.length === 0) {
+        var zip_sql = null;
+      } else {
+        var zip_sql = "zip IN ("+ "'" + zip.join("'" + ',' + "'") + "')";
+        listSQL.push(zip_sql);
+      }
 
-if (dma.length === 0) {
-    var dma_sql = null
-} else { 
-    var dma_sql = "dma IN ("+ "'" + dma.join("'" + ',' + "'") + "')"
-    listSQL.push(dma_sql);
-}
-//console.log(dma_sql)
+      var joinedSQL = listSQL.join(" AND ");
 
-if (ethnicity.length === 0) {
-    var ethnicity_sql = null
-} else { 
-    var ethnicity_sql = "ethnicity_category IN ("+ "'" + ethnicity.join("'" + ',' + "'") + "')"
-    listSQL.push(income_sql);
-}
-//console.log(ethnicity_sql)
+      var brandLegend = brand;
+      var colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#63666A'];
 
-if (children.length === 0) {
-    var children_sql = null
-} else { 
-    var children_sql = "children_category IN ("+ "'" + children.join("'" + ',' + "'") + "')"
-    listSQL.push(children_sql);
-}
-//console.log(children_sql)
+      function makeLegend(array) {
 
-if (state.length === 0) {
-    var state_sql = null
-} else { 
-    var state_sql = "st_abrev IN ("+ "'" + state.join("'" + ',' + "'") + "')"
-    listSQL.push(state);
-}
-//console.log(state_sql)
+        var list = document.createElement('ul');
+        list.setAttribute("class", "legend-ul");
 
-if (zip.length === 0) {
-    var zip_sql = null
-} else { 
-    var zip_sql = "zip IN ("+ "'" + zip.join("'" + ',' + "'") + "')"
-    listSQL.push(zip_sql);
-}
-//console.log(zip_sql)
+        for(var i = 0; i < array.length; i++) {
 
-var joinedSQL = listSQL.join(" AND ");
+          var main = document.getElementById('legend-main');
+          main.setAttribute("style", "display: initial");
 
-brandLegend = brand
-colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#63666A']
+          var span = document.createElement('span');
+          span.setAttribute("class", "legend-circle");
+          span.setAttribute("style", "background-color: " + colorsLegend[i] + "");
 
-function makeLegend(array) {
-    // Create the list element:
-    var list = document.createElement('ul');
-    list.setAttribute("class", "legend-ul");
+          var item = document.createElement('p');
+          item.setAttribute("class", "legend-text");
+          item.innerHTML = brandLegend[i];
 
-    for(var i = 0; i < array.length; i++) {
-        // Create the list item:
-        var main = document.getElementById('legend-main');
-        main.setAttribute("style", "display: initial");
+          list.appendChild(span);
+          list.appendChild(item);
 
-        var span = document.createElement('span');
-        span.setAttribute("class", "legend-circle");
-        span.setAttribute("style", "background-color: " + colorsLegend[i] + "");
-        
-        var item = document.createElement('p');
-        item.setAttribute("class", "legend-text");
-        item.innerHTML = brandLegend[i];
-        // Add it to the list:
-
-        list.appendChild(span);
-        list.appendChild(item);
-    }
-    console.log(list);
-    return list
-}
-
-var list = document.getElementById('legend-dynamic');     
-list.innerHTML = "";                            
-list.appendChild(makeLegend(brand));
-
-var $set = $('ul.legend-ul').children();    
-for(var i=0, len = $set.length; i < len; i+=2){
-    $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
-}   
-
-
-
-var defaultCartocss = "\
-#layer {\
-  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
-  opacity: 0.5;\
-}\
-#layer::outline {\
-  line-width: 1;\
-  line-color: #FFF;\
-  line-opacity: 0.5;\
-}"
-
-function generateCartoCSS(study) {
-  if (study === "none") {
-    return defaultCartocss;
-  } else {
-    var newCartocss = "\
-#layer {\
-  polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
-  opacity: 0.5;\
-}\
-#layer::outline {\
-  line-width: 1;\
-  line-color: #FFF;\
-  line-opacity: 0.5;\
-}"
-
-var comboCartocss = defaultCartocss + newCartocss;
-console.log(comboCartocss);
-return comboCartocss;
-}
-}
-
-
-        switch (true) {
-
-          case (joinedSQL.length !== 0):
-            console.log("You selected both!");
-            mapSubLayer2.set({
-              'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
-              'cartocss': "#layer { polygon-fill: ramp([income_category], cartocolor(Bold), category(4)); polygon-opacity: 0.75;}"
-            });
-            mapSubLayer.set({
-              'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" + distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-              'cartocss': generateCartoCSS(distance)
-            });
-            
-            break;
-
-          case (joinedSQL.length === 0):
-            console.log("NO BLOCKS SELECTED");
-            mapSubLayer.set({
-              'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" + distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-              'cartocss': generateCartoCSS(distance)
-            });
-            
-            break;
         }
 
+        return list
+      }
 
-      });
-    }
+      var list = document.getElementById('legend-dynamic');
+      list.innerHTML = "";
+      list.appendChild(makeLegend(brand));
 
-  </script>
+      var $set = $('ul.legend-ul').children();
+      for(var i=0, len = $set.length; i < len; i+=2){
+        $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
+      }
+
+      var defaultCartocss = "\
+      #layer {\
+        polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
+        opacity: 0.5;\
+      }\
+      #layer::outline {\
+        line-width: 1;\
+        line-color: #FFF;\
+        line-opacity: 0.5;\
+      }";
+
+      function generateCartoCSS(study) {
+        if (study === "none") {
+          return defaultCartocss;
+        } else {
+          var newCartocss = "\
+            #layer {\
+              polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
+              opacity: 0.7;\
+            }\
+            #layer::outline {\
+              line-width: 1;\
+              line-color: #FFF;\
+              line-opacity: 0.7;\
+            }";
+
+        return defaultCartocss + newCartocss;
+        }
+      }
+
+      var defaultShapeCartocss = "\
+        #layer {\
+          polygon-fill: #414346;\
+          opacity: 0.5;\
+        }\
+        #layer::outline {\
+          line-width: 2;\
+          line-color: #FFF;\
+          line-opacity: 0.5;\
+        }";
+
+      switch (true) {
+
+        case (joinedSQL.length !== 0):
+          mapSubLayer2.set({
+            'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
+            'cartocss': defaultShapeCartocss
+          });
+          mapSubLayer.set({
+            'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
+                   distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+            'cartocss': generateCartoCSS(distance)
+          });
+
+          break;
+
+        case (joinedSQL.length === 0):
+          mapSubLayer.set({
+            'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
+                   distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+            'cartocss': generateCartoCSS(distance)
+          });
+
+          break;
+      }
+    });
+  }
+
+</script>
 </head>
 
 <body onload="init()">
 
-<!-- SIDEBAR -->
-<div class='app-title'>
-<h1>Think Near Campaign Planner</h1>
-</div>
-<div class='app-menu'>
-<div class='app-icon open button'>
-  <nav role="navigation">
-  <div id="menuToggle">
-    <span></span>
-    <span></span>
-    <span></span>
-</div>
-</nav>
-</div>
-
-</div>
-
+  <!-- SIDEBAR -->
+  <div class='app-title'>
+    <h1>Think Near Campaign Planner</h1>
+  </div>
+  <div class='app-menu'>
+    <div class='app-icon open button'>
+      <nav role="navigation">
+      <div id="menuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      </nav>
+    </div>
+  </div>
 
 
+  <!-- MAP -->
 
-<!-- MAP -->
+  <div class='fullSize' id='map'>
+  <div class="legend" id="legend-main" style="display: none;">
+  <div class="legend-inner" id="legend-dynamic">
+  </div>
+  </div>
+  </div>
 
-<div class='fullSize' id='map'>
-<div class="legend" id="legend-main" style="display: none;">
-<div class="legend-inner" id="legend-dynamic">
+  <div id='toolbar'>
 
+    <p>BRAND</p>
 
-</div>
-</div>
-</div>
+    <select id="brand" class="ui multiple search dropdown brand" multiple="">
+    </select>
 
-<div id='toolbar'>
+    <br></br>
 
+    <p>RADIUS</p>
 
+    <select id="distance" class="ui multiple dropdown distance" multiple="">
+    </select>
 
-<!-- <select id="userIDSelect" class="ui multiple dropdown">
-    <option value="ICLS">ICLS</option>
-    <option value="2015">2015</option>
-</select> -->
-<p>BRAND</p>
+    <br></br>
 
-<select id="brand" class="ui multiple search dropdown brand" multiple="">
-</select>
+    <p>INCOME CATEGORY</p>
 
-<br></br>
+    <select id="income" class="ui multiple search dropdown income" multiple="">
+    </select>
 
-<p>RADIUS</p>
+    <br></br>
 
-<select id="distance" class="ui multiple dropdown distance" multiple="">
-</select>
+    <p>AGE CATEGORY</p>
 
-<br></br>
+    <select id="age" class="ui multiple search dropdown age" multiple="">
+    </select>
 
-<p>INCOME CATEGORY</p>
+    <br></br>
 
-<select id="income" class="ui multiple search dropdown income" multiple="">
-</select>
+    <p>DMA</p>
 
-<br></br>
+    <select id="dma" class="ui multiple search dropdown dma" multiple="">
+    </select>
 
-<p>AGE CATEGORY</p>
+    <br></br>
 
-<select id="age" class="ui multiple search dropdown age" multiple="">
-</select>
+    <p>CHILDREN</p>
 
-<br></br>
+    <select id="children" class="ui multiple search dropdown children" multiple="">
+    </select>
 
-<p>DMA</p>
+    <br></br>
 
-<select id="dma" class="ui multiple search dropdown dma" multiple="">
-</select>
+    <p>ETHNICITY</p>
 
-<br></br>
+    <select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
+    </select>
 
-<p>CHILDREN</p>
+    <br></br>
 
-<select id="children" class="ui multiple search dropdown children" multiple="">
-</select>
+    <p>STATE</p>
 
-<br></br>
+    <select id="state" class="ui multiple search dropdown state" multiple="">
+    </select>
 
-<p>ETHNICITY</p>
+    <br></br>
 
-<select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
-</select>
+    <p>ZIP CODE</p>
 
-<br></br>
+    <select id="zip" class="ui multiple search dropdown zip" multiple="">
+    </select>
 
-<p>STATE</p>
+    <br></br>
 
-<select id="state" class="ui multiple search dropdown state" multiple="">
-</select>
+    <p id="button" class="button button--blue">
+      <button  class="ui primary button">
+        <a style="color:white;" href="#">VISUALIZE</a>
+      </button>
+    </p>
 
-<br></br>
+    <div class="ui sidebar inverted vertical menu">
+      <p style="color: #fff;">ThinkNear</p>
+    </div>
+  </div>
 
-<p>ZIP CODE</p>
+  <!-- TOOLBAR -->
 
-<select id="zip" class="ui multiple search dropdown zip" multiple="">
-</select>
+  <script type="infowindow/html" id="iw_template_2">
+    <div class="cartodb-popup v2">
+      <a href="#close" class="cartodb-popup-close-button close">x</a>
+      <div class="cartodb-popup-content">
+        <div class="cartodb-popup-content-wrapper">
+          <p class="title">{{st_abbrev}} - {{zip}}</p>
+          <h4>AGE</h4>
+            <p>{{age_category}}</p>
+          <h4>CHILDREN</h4>
+            <p>{{children_category}}</p>
+          <h4>INCOME</h4>
+            <p>{{income_category}}</p>
+          <h4>ETHNICITY</h4>
+            <p>{{ethnicity_category}}</p>
+          <h4>DMA</h4>
+            <p>{{dma}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="cartodb-popup-tip-container">
+    </div>
+  </script>
 
-<br></br>
+  <script>
 
-
-<!-- <button class="ui primary button" id="#button">
-<a href="#" style="color: white;">Visualize</a>
-</button>
- -->
-
-<p id="button" class="button button--blue">
-<button  class="ui primary button">
-<a style="color:white;" href="#">VISUALIZE</a>
-</button>       
-</p>
-
-
-<div class="ui sidebar inverted vertical menu">
-  <p style="color: #fff;">Think Near</p>
-
-</div>
-
-
-
-
-</div>
-<!-- TOOLBAR --> 
-</div>
-
-<!-- <script type="infowindow/html" id="iw_template">
-<div class="cartodb-popup v2">
-<a href="#close" class="cartodb-popup-close-button close">x</a>
-<div class="cartodb-popup-content" style="height: 100% !important;">
-<div class="inner-infowindow">
-<p class="title">{{brand_label}}</p>
-<h4>WIDTH</h4>
-<p>{{width_category}}</p>
-</div>
-</div>
-</div>
-<div class="cartodb-popup-tip-container">
-</div>
-
-</script> -->
-
-<script type="infowindow/html" id="iw_template_2">
-<div class="cartodb-popup v2">
-<a href="#close" class="cartodb-popup-close-button close">x</a>
-<div class="cartodb-popup-content">
-<div class="cartodb-popup-content-wrapper">
-<p class="title">{{st_abbrev}} - {{zip}}</p>
-<h4>AGE</h4>
-<p>{{age_category}}</p>
-<h4>CHILDREN</h4>
-<p>{{children_category}}</p>
-<h4>INCOME</h4>
-<p>{{income_category}}</p>
-<h4>ETHNICITY</h4>
-<p>{{ethnicity_category}}</p>
-<h4>DMA</h4>
-<p>{{dma}}</p>
-</div>
-</div>
-</div>
-<div class="cartodb-popup-tip-container">
-</div>
-
-</script>
-
-<script>
-
-// $('.ui.multiple.dropdown').dropdown({ 
-//   fields: {name: "name", value: "value"}, 
-//   apiSettings: {
-//       mockResponse: {
-//         success: true,
-//         results: [
-//             {"name":"ICLS","value":"ICLS"},
-//             {"name":"HCL","value":"HCL"}]
-//     },
-//     onResponse: function(test) {
-//       var results = [
-//             {"name":"ICLS","value":"ICLS"},
-//             {"name":"HCL","value":"HCL"}]
-//             console.log(results)
-//           }
-//       //url: 'https://mforrest.cartodb.com/api/v2/sql?q=%20SELECT%20year%20as%20name,%20year%20as%20value%20FROM%20hcdisbursements%20GROUP%20BY%20year'   
-//   }
-// })
-// ;
-
-$('.ui.multiple.dropdown.brand').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.brand').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=select%20brand_label%20as%20name,%20brand_label%20as%20value%20from%20poi_data_buffers_unioned%20group%20by%20brand_label%20order%20by%20brand_label%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=select%20brand_label%20as%20name,%20brand_label%20as' +
+             '%20value%20from%20poi_data_buffers_unioned%20group%20by%20brand_label%20order%20by%20brand_label%20asc'
+        },
+        saveRemoteData: false,
+        filterRemoteData: true,
+        dataType: JSON
+      });
 
-$('.ui.multiple.dropdown.distance').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.distance').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20width_category%20as%20name,%20width_category%20as%20value%20from%20poi_data_buffers_unioned%20group%20by%20width_category%20order%20by%20width_category%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  })
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20width_category%20as%20name,%20width_category' +
+             '%20as%20value%20from%20poi_data_buffers_unioned%20group%20by%20width_category%20order%20by' +
+             '%20width_category%20asc'
+        },
+        saveRemoteData: false,
+        filterRemoteData: true,
+        dataType: JSON
+      });
 
-$('.ui.multiple.dropdown.income').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.income').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20income_category%20as%20name,%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20income_category%20order%20by%20income_category%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20income_category%20as%20name,' +
+             '%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20income_category%20order%20by%20income_category%20asc'
+        },
+        saveRemoteData: false,
+        filterRemoteData: true,
+        dataType: JSON
+      });
 
-$('.ui.multiple.dropdown.age').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.age').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20age_category%20as%20name,%20age_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20age_category%20order%20by%20age_category%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20age_category%20as%20name,%20age_category' +
+             '%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20age_category' +
+             '%20order%20by%20age_category%20asc',
+        },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
-$('.ui.multiple.dropdown.children').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.children').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20children_category%20as%20name,%20children_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20children_category%20order%20by%20children_category%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20children_category%20as%20name,' +
+             '%20children_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20children_category%20order%20by%20children_category%20asc'
+      },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
-$('.ui.multiple.dropdown.dma').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.dma').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20dma%20as%20name,%20dma%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20dma%20order%20by%20dma%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20dma%20as%20name,%20dma%20as%20value%20from' +
+             '%20esri_block_group_shapes_simplified_demo_1%20group%20by%20dma%20order%20by%20dma%20asc'
+        },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
-$('.ui.multiple.dropdown.ethnicity').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.ethnicity').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
+          };
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20ethnicity_category%20as%20name,%20ethnicity_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20ethnicity_category%20order%20by%20ethnicity_category%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20ethnicity_category%20as%20name,' +
+             '%20ethnicity_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20ethnicity_category%20order%20by%20ethnicity_category%20asc'
+        },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
-$('.ui.multiple.dropdown.state').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
+    $('.ui.multiple.dropdown.state').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
+        var response = {
+          results: {}
+        };
+
+        $.each(cartoResponse.rows, function(row) {
+          var i, x = "";
+          for (i in response) {
+            x = response[i];
+          }
+        });
+
+        response = {
+          "success": true,
+          "results": cartoResponse.rows
+        };
+
+        return response;
+
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20st_abbrev%20as%20name,%20st_abbrev%20as%20value' +
+             '%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
+        },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
+
+    $('.ui.multiple.dropdown.zip').dropdown({
+      maxSelections: 5,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
           var response = {
             results: {}
           };
-          console.log(response);
+
           $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
+            var i, x = "";
+            for (i in response) {
+              x = response[i];
+            }
           });
+
           response = {
             "success": true,
             "results": cartoResponse.rows
-          },
-          console.log(response);
-          return response;
-
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20st_abbrev%20as%20name,%20st_abbrev%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
-
-$('.ui.multiple.dropdown.zip').dropdown({ 
-  maxSelections: 5,
-  fields: { name: "name", value: "value" },
-  apiSettings: {
-      cache: false,
-      onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
           };
-          console.log(response);
-          $.each(cartoResponse.rows, function(row) {
-          var i, x = ""
-          for (i in response) {
-            x = response[i]
-          }
-          });
-          response = {
-            "success": true,
-            "results": cartoResponse.rows
-          },
-          console.log(response);
+
           return response;
 
-    },
-    url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20zip%20as%20name,%20zip%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20zip%20order%20by%20zip%20asc',
-    },
-    saveRemoteData: false,
-    filterRemoteData: true,
-    dataType: JSON
-  });
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20zip%20as%20name,%20zip%20as%20value%20from' +
+             '%20esri_block_group_shapes_simplified_demo_1%20group%20by%20zip%20order%20by%20zip%20asc'
+        },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
-$('.ui.sidebar').sidebar({
-  dimPage: false,
-  transition: 'push',
-});
+    $('.ui.sidebar').sidebar({
+      dimPage: false,
+      transition: 'push'
+    });
 
- $('.ui.sidebar')
-.sidebar('attach events', '.open.button');
+    $('.ui.sidebar').sidebar('attach events', '.open.button');
 
-</script>
+  </script>
 </body>
 </html>
