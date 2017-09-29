@@ -87,12 +87,12 @@
         brandsLayer = layer.getSubLayer(1);
 
         shapesLayer = layer.getSubLayer(0),
-                       layer.getSubLayer(0).setInteraction(true),
-                       cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
-                        ['age_category', 'children_category', 'dma', 'ethnicity_category', 'income_category',
-                         'st_abbrev', 'zip'], {
-                          infowindowTemplate: $('#iw_template_2').html()
-                       });
+                      layer.getSubLayer(0).setInteraction(true),
+                      cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
+                              ['age_category', 'children_category', 'dma', 'ethnicity_category',
+                               'income_category', 'st_abbrev', 'zip'],
+                              { infowindowTemplate: $('#iw_template_2').html() }
+                      );
 
       }).on('error', function(err) {
         console.log("an error occured: " + err);
@@ -230,6 +230,7 @@
 
 
       if (joinedSQL.length !== 0) {
+        shapesLayer.show();
         shapesLayer.set({
           'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
           'cartocss': defaultShapeCartocss
@@ -241,7 +242,7 @@
         });
 
       } else { // No Home Block Group Shapes
-        shapesLayer.remove();
+        shapesLayer.hide();
         brandsLayer.set({
           'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN (" + "'" +
                  distance.join("'" + ',' + "'") + "') AND brand_label IN (" + "'" + brand.join("'" + ',' + "'") + "')",
