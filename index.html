@@ -84,9 +84,9 @@
 
         $('body').append(testTooltip.render().el);
 
-        mapSubLayer = layer.getSubLayer(1);
+        brandsLayer = layer.getSubLayer(1);
 
-        mapSubLayer2 = layer.getSubLayer(0),
+        shapesLayer = layer.getSubLayer(0),
                        layer.getSubLayer(0).setInteraction(true),
                        cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
                         ['age_category', 'children_category', 'dma', 'ethnicity_category', 'income_category',
@@ -110,60 +110,39 @@
       var state = $("#state").val();
       var zip = $("#zip").val();
 
-      var age_sql;
-      var dma_sql;
-      var children_sql;
-      var ethnicity_sql;
-      var income_sql;
-      var state_sql;;
-      var zip_sql
       var listSQL = [];
 
-      if (income.length === 0) {
-        var income_sql = null;
-      } else {
+      if (income.length > 0) {
         var income_sql = "income_category IN ("+ "'" + income.join("'" + ',' + "'") + "')";
         listSQL.push(income_sql);
       }
 
-      if (age.length === 0) {
-        var age_sql = null;
-      } else {
+      if (age.length > 0) {
         var age_sql = "age_category IN ("+ "'" + age.join("'" + ',' + "'") + "')";
         listSQL.push(age_sql);
       }
 
-      if (dma.length === 0) {
-        var dma_sql = null;
-      } else {
+      if (dma.length > 0) {
         var dma_sql = "dma IN ("+ "'" + dma.join("'" + ',' + "'") + "')";
         listSQL.push(dma_sql);
       }
 
-      if (ethnicity.length === 0) {
-        var ethnicity_sql = null;
-      } else {
+      if (ethnicity.length > 0) {
         var ethnicity_sql = "ethnicity_category IN ("+ "'" + ethnicity.join("'" + ',' + "'") + "')";
-        listSQL.push(income_sql);
+        listSQL.push(ethnicity_sql);
       }
 
-      if (children.length === 0) {
-        var children_sql = null;
-      } else {
+      if (children.length > 0) {
         var children_sql = "children_category IN ("+ "'" + children.join("'" + ',' + "'") + "')";
         listSQL.push(children_sql);
       }
 
-      if (state.length === 0) {
-        var state_sql = null;
-      } else {
-        var state_sql = "st_abrev IN ("+ "'" + state.join("'" + ',' + "'") + "')";
-        listSQL.push(state);
+      if (state.length > 0) {
+        var state_sql = "st_abbrev IN ("+ "'" + state.join("'" + ',' + "'") + "')";
+        listSQL.push(state_sql);
       }
 
-      if (zip.length === 0) {
-        var zip_sql = null;
-      } else {
+      if (zip.length > 0) {
         var zip_sql = "zip IN ("+ "'" + zip.join("'" + ',' + "'") + "')";
         listSQL.push(zip_sql);
       }
@@ -196,7 +175,7 @@
 
         }
 
-        return list
+        return list;
       }
 
       var list = document.getElementById('legend-dynamic');
@@ -249,29 +228,25 @@
           line-opacity: 0.5;\
         }";
 
-      switch (true) {
 
-        case (joinedSQL.length !== 0):
-          mapSubLayer2.set({
-            'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
-            'cartocss': defaultShapeCartocss
-          });
-          mapSubLayer.set({
-            'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
-                   distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-            'cartocss': generateCartoCSS(distance)
-          });
+      if (joinedSQL.length !== 0) {
+        shapesLayer.set({
+          'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
+          'cartocss': defaultShapeCartocss
+        });
+        brandsLayer.set({
+          'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
+                 distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+          'cartocss': generateCartoCSS(distance)
+        });
 
-          break;
-
-        case (joinedSQL.length === 0):
-          mapSubLayer.set({
-            'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
-                   distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-            'cartocss': generateCartoCSS(distance)
-          });
-
-          break;
+      } else { // No Home Block Group Shapes
+        shapesLayer.remove();
+        brandsLayer.set({
+          'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN (" + "'" +
+                 distance.join("'" + ',' + "'") + "') AND brand_label IN (" + "'" + brand.join("'" + ',' + "'") + "')",
+          'cartocss': generateCartoCSS(distance)
+        });
       }
     });
   }
