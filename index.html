@@ -59,7 +59,7 @@
       type: 'carto',
       sublayers: [
         {
-          sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE cartodb_id < 0',
+          sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE cartodb_id < 0',
           cartocss: '#layer { polygon-fill: blue; }'
         },
         {
@@ -232,7 +232,7 @@
       if (joinedSQL.length !== 0) {
         shapesLayer.show();
         shapesLayer.set({
-          'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_1 WHERE " + joinedSQL + "",
+          'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE " + joinedSQL + "",
           'cartocss': defaultShapeCartocss
         });
         brandsLayer.set({
@@ -479,7 +479,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20income_category%20as%20name,' +
-             '%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
              '%20income_category%20order%20by%20income_category%20asc'
         },
         saveRemoteData: false,
@@ -513,7 +513,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20age_category%20as%20name,%20age_category' +
-             '%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20age_category' +
+             '%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20age_category' +
              '%20order%20by%20age_category%20asc',
         },
       saveRemoteData: false,
@@ -547,7 +547,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20children_category%20as%20name,' +
-             '%20children_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20children_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
              '%20children_category%20order%20by%20children_category%20asc'
       },
       saveRemoteData: false,
@@ -581,7 +581,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20dma%20as%20name,%20dma%20as%20value%20from' +
-             '%20esri_block_group_shapes_simplified_demo_1%20group%20by%20dma%20order%20by%20dma%20asc'
+             '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20dma%20order%20by%20dma%20asc'
         },
       saveRemoteData: false,
       filterRemoteData: true,
@@ -614,7 +614,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20ethnicity_category%20as%20name,' +
-             '%20ethnicity_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by' +
+             '%20ethnicity_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
              '%20ethnicity_category%20order%20by%20ethnicity_category%20asc'
         },
       saveRemoteData: false,
@@ -648,7 +648,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20st_abbrev%20as%20name,%20st_abbrev%20as%20value' +
-             '%20from%20esri_block_group_shapes_simplified_demo_1%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
+             '%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
         },
       saveRemoteData: false,
       filterRemoteData: true,
@@ -681,7 +681,7 @@
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20zip%20as%20name,%20zip%20as%20value%20from' +
-             '%20esri_block_group_shapes_simplified_demo_1%20group%20by%20zip%20order%20by%20zip%20asc'
+             '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20zip%20order%20by%20zip%20asc'
         },
       saveRemoteData: false,
       filterRemoteData: true,
