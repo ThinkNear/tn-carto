@@ -26,19 +26,69 @@
 <script src="semantic/dist/components/dropdown.js"></script>
 <link rel="stylesheet" type="text/css" href="semantic/dist/components/dropdown.min.css">
 
+<style>
+
+  /* For Visualize Button div */
+  #fixed-button {
+    position: fixed;
+    width: 310px;
+    height: 50px;
+    background-color: white;
+    bottom: 0;
+    padding-top: 15px;
+    padding-bottom: 50px;
+    border-top: 2px;
+    border-top-style: groove;
+  }
+
+  /* For Right-Side Toolbar */
+  #toolbar {
+    padding-bottom: 70px;
+  }
+
+  /* For Visualize Button */
+  #visualize-button { background-color: #FFC72C; }
+  #visualize-button:hover { background-color: #FBAD2C; }
+  #visualize-button:active { background-color: #EC9124; }
+
+  /* For Filter Select Dropdowns */
+  .ui.multiple.dropdown {
+    width: 300px;
+  }
+
+  /* For Geocoder Text Input */
+  .leaflet-pelias-input {
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: inherit;
+  }
+
+  /* For Geocoder Input Box */
+  .leaflet-pelias-expanded {
+    width: 350px;
+  }
+
+  .toolbar-section-title {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+</style>
+
 <script>
   var map;
+  var cartoUserName = 'thinknear-services';
 
   function init(){
     map = new L.Map('map', {
-      center: [39.833333,-98.583333],
+      center: [39.833333, -98.583333],
       zoom: 4,
       zoomControl: false
     });
 
     L.control.geocoder('mapzen-XagouUC', {
       focus: true,
-      placeholder: 'Search',
+      placeholder: 'Zoom to any US regions, e.g. city, county, state...',
       position: 'topright',
       params: {
         sources: 'whosonfirst',
@@ -54,8 +104,54 @@
                    '&copy;<a href="http://cartodb.com/attributions">CARTO</a>'
     }).addTo(map);
 
+    var shapeClicked = {};
+
+    function onShapeClick(map, shapesLayer) {
+
+      /* Leaflet JS Stylings */
+      var onClickShapeCSS = {
+        fillColor: '#ABADAF',
+        fillOpacity: 0.5,
+        color: '#ABADAF',
+        opacity: 0.6,
+        weight: 1
+      };
+
+      /*
+      Using Leaflet JS GeoJSON API methods to replace highlighted shapes
+      perform faster than Carto's SubLayer and Layers
+      */
+      function featureClick(e, pos, latlng, data) {
+        if (shapeClicked.cartodb_id !== data.cartodb_id) {
+          var sql = new cartodb.SQL({ user: cartoUserName, format: 'geojson' });
+          sql.execute("SELECT cartodb_id, the_geom FROM esri_block_group_shapes_simplified_demo_indexed " +
+                        "WHERE cartodb_id = " + data.cartodb_id).done(function(geojson) {
+            if (geojson.features.length > 0) {
+              var features = geojson.features[0];
+              var clickedGeometryLayer = L.GeoJSON.geometryToLayer(features.geometry);
+              clickedGeometryLayer.setStyle(onClickShapeCSS);
+
+              removeCurrentShapeClickedLayer();
+              shapeClicked = { cartodb_id: data.cartodb_id, geometry: clickedGeometryLayer };
+              map.addLayer(clickedGeometryLayer);
+            }
+          });
+        }
+      }
+
+      function removeCurrentShapeClickedLayer() {
+        if (Object.keys(shapeClicked).length !== 0){
+          map.removeLayer(shapeClicked.geometry);
+          shapeClicked = {};
+        }
+      }
+
+      shapesLayer.on('featureClick', featureClick);
+      shapesLayer.setInteraction(true);
+    }
+
     cartodb.createLayer(map,{
-      user_name: 'thinknear-services',
+      user_name: cartoUserName,
       type: 'carto',
       sublayers: [
         {
@@ -89,10 +185,12 @@
         shapesLayer = layer.getSubLayer(0),
                       layer.getSubLayer(0).setInteraction(true),
                       cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
-                              ['age_category', 'children_category', 'dma', 'ethnicity_category',
+                              ['cartodb_id', 'age_category', 'children_category', 'dma', 'ethnicity_category',
                                'income_category', 'st_abbrev', 'zip'],
                               { infowindowTemplate: $('#iw_template_2').html() }
                       );
+
+        onShapeClick(map, shapesLayer);
 
       }).on('error', function(err) {
         console.log("an error occured: " + err);
@@ -150,7 +248,7 @@
       var joinedSQL = listSQL.join(" AND ");
 
       var brandLegend = brand;
-      var colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#63666A'];
+      var colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#79C753', '#603CC7'];
 
       function makeLegend(array) {
 
@@ -187,45 +285,40 @@
         $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
       }
 
-      var defaultCartocss = "\
-      #layer {\
-        polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
-        opacity: 0.5;\
-      }\
-      #layer::outline {\
-        line-width: 1;\
-        line-color: #FFF;\
-        line-opacity: 0.5;\
-      }";
+      function generateWidthCategoriesCartoCSS(distances) {
+        var distancesSorted = distances;
+        distancesSorted.reverse();
+        var finalPoiBuffersCSS = "";
+        var widthCategoryOpacityLegend = [0.4, 0.5, 0.6, 0.7];
 
-      function generateCartoCSS(study) {
-        if (study === "none") {
-          return defaultCartocss;
-        } else {
-          var newCartocss = "\
-            #layer {\
-              polygon-fill: ramp([brand_label], (#00AFD7, #E0004D, #FFC72C, #F68D2E, #63666A), (" + brand + "));\
-              opacity: 0.7;\
+        for (i = 0; i < distancesSorted.length; i++) {
+          var poiBufferCSS = "\
+            #layer [ width_category = \"" + distancesSorted[i] + "\"] {\
+              polygon-fill: ramp([brand_label], (" + colorsLegend.join(',') + "), (" + brand + "));\
+              polygon-opacity: " + widthCategoryOpacityLegend[i] + ";\
             }\
-            #layer::outline {\
-              line-width: 1;\
+            #layer::outline [ width_category = \"" + distancesSorted[i] + "\"] {\
+              line-width: 1px;\
               line-color: #FFF;\
-              line-opacity: 0.7;\
+              line-opacity: 0.5;\
             }";
 
-        return defaultCartocss + newCartocss;
+          finalPoiBuffersCSS = finalPoiBuffersCSS + poiBufferCSS;
+
         }
+
+        return finalPoiBuffersCSS;
       }
 
       var defaultShapeCartocss = "\
         #layer {\
-          polygon-fill: #414346;\
-          opacity: 0.5;\
+          polygon-fill: #ABADAF;\
+          opacity: 0.4;\
         }\
         #layer::outline {\
-          line-width: 2;\
-          line-color: #FFF;\
-          line-opacity: 0.5;\
+          line-width: 1px;\
+          line-color: #ABADAF;\
+          line-opacity: 0.6;\
         }";
 
 
@@ -238,7 +331,7 @@
         brandsLayer.set({
           'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
                  distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-          'cartocss': generateCartoCSS(distance)
+          'cartocss': generateWidthCategoriesCartoCSS(distance)
         });
 
       } else { // No Home Block Group Shapes
@@ -246,7 +339,7 @@
         brandsLayer.set({
           'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN (" + "'" +
                  distance.join("'" + ',' + "'") + "') AND brand_label IN (" + "'" + brand.join("'" + ',' + "'") + "')",
-          'cartocss': generateCartoCSS(distance)
+          'cartocss': generateWidthCategoriesCartoCSS(distance)
         });
       }
     });
@@ -259,7 +352,7 @@
 
   <!-- SIDEBAR -->
   <div class='app-title'>
-    <h1>Think Near Campaign Planner</h1>
+    <h1>ThinkNear Campaign Planner</h1>
   </div>
   <div class='app-menu'>
     <div class='app-icon open button'>
@@ -285,6 +378,8 @@
 
   <div id='toolbar'>
 
+    <p class="toolbar-section-title" style="padding-top:0;">Geofencing your point of interest</p>
+
     <p>BRAND</p>
 
     <select id="brand" class="ui multiple search dropdown brand" multiple="">
@@ -295,41 +390,20 @@
     <p>RADIUS</p>
 
     <select id="distance" class="ui multiple dropdown distance" multiple="">
+      <option>500 Meters</option>
+      <option>1000 Meters</option>
+      <option>1 Mile</option>
+      <option>3 Miles</option>
+      <option selected>5 Miles</option>
     </select>
 
     <br></br>
 
-    <p>INCOME CATEGORY</p>
-
-    <select id="income" class="ui multiple search dropdown income" multiple="">
-    </select>
-
-    <br></br>
-
-    <p>AGE CATEGORY</p>
-
-    <select id="age" class="ui multiple search dropdown age" multiple="">
-    </select>
-
-    <br></br>
+    <p class="toolbar-section-title">Geographic - Defining the geographic shapes</p>
 
     <p>DMA</p>
 
     <select id="dma" class="ui multiple search dropdown dma" multiple="">
-    </select>
-
-    <br></br>
-
-    <p>CHILDREN</p>
-
-    <select id="children" class="ui multiple search dropdown children" multiple="">
-    </select>
-
-    <br></br>
-
-    <p>ETHNICITY</p>
-
-    <select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
     </select>
 
     <br></br>
@@ -348,14 +422,65 @@
 
     <br></br>
 
-    <p id="button" class="button button--blue">
-      <button  class="ui primary button">
-        <a style="color:white;" href="#">VISUALIZE</a>
-      </button>
-    </p>
+    <p class="toolbar-section-title">Audience - Targeting home block groups that over-index selected demographics</p>
+
+    <p>INCOME CATEGORY</p>
+
+    <select id="income" class="ui multiple search dropdown income" multiple="">
+      <option>LOW INCOME</option>
+      <option>MEDIUM INCOME</option>
+      <option>HIGH INCOME</option>
+      <option>NONE</option>
+    </select>
+
+    <br></br>
+
+    <p>AGE CATEGORY</p>
+
+    <select id="age" class="ui multiple search dropdown age" multiple="">
+      <option>AGE 18-24</option>
+      <option>AGE 25-34</option>
+      <option>AGE 35-54</option>
+      <option>AGE 55 or Greater</option>
+      <option>NONE</option>
+    </select>
+
+    <br></br>
+
+    <p>CHILDREN</p>
+
+    <select id="children" class="ui multiple search dropdown children" multiple="">
+      <option>Over-Index for Households with Children</option>
+      <option>Under-Index for Households With Children</option>
+    </select>
+
+    <br></br>
+
+    <p>ETHNICITY</p>
+
+    <select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
+      <option>AFRICAN AMERICAN</option>
+      <option>ASIAN</option>
+      <option>HISPANIC</option>
+      <option>PACIFIC ISLANDER</option>
+      <option>WHITE</option>
+      <option>NONE</option>
+    </select>
+
+    <br></br>
 
     <div class="ui sidebar inverted vertical menu">
       <p style="color: #fff;">ThinkNear</p>
+    </div>
+
+    <div class="line" />
+
+    <div id="fixed-button">
+      <p id="button" class="button">
+        <button id="visualize-button" class="ui primary button btn">
+          <a style="color:white;" href="#">VISUALIZE</a>
+        </button>
+      </p>
     </div>
   </div>
 
@@ -387,198 +512,56 @@
   <script>
 
     $('.ui.multiple.dropdown.brand').dropdown({
-      maxSelections: 5,
+      placeholder: 'search brand name, e.g. Starbucks',
+      maxSelections: 6,
       fields: { name: "name", value: "value" },
       apiSettings: {
         cache: false,
         onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
+          return {
             "success": true,
             "results": cartoResponse.rows
           };
-
-          return response;
-
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=select%20brand_label%20as%20name,%20brand_label%20as' +
              '%20value%20from%20poi_data_buffers_unioned%20group%20by%20brand_label%20order%20by%20brand_label%20asc'
         },
-        saveRemoteData: false,
-        filterRemoteData: true,
-        dataType: JSON
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
       });
 
     $('.ui.multiple.dropdown.distance').dropdown({
-      maxSelections: 5,
-      fields: { name: "name", value: "value" },
-      apiSettings: {
-        cache: false,
-        onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
-            "success": true,
-            "results": cartoResponse.rows
-          };
-
-          return response;
-
-        },
-        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20width_category%20as%20name,%20width_category' +
-             '%20as%20value%20from%20poi_data_buffers_unioned%20group%20by%20width_category%20order%20by' +
-             '%20width_category%20asc'
-        },
-        saveRemoteData: false,
-        filterRemoteData: true,
-        dataType: JSON
+      placeholder: 'default to 5 miles',
+      maxSelections: 5
       });
 
     $('.ui.multiple.dropdown.income').dropdown({
-      maxSelections: 5,
-      fields: { name: "name", value: "value" },
-      apiSettings: {
-        cache: false,
-        onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
-            "success": true,
-            "results": cartoResponse.rows
-          };
-
-          return response;
-
-        },
-        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20income_category%20as%20name,' +
-             '%20income_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
-             '%20income_category%20order%20by%20income_category%20asc'
-        },
-        saveRemoteData: false,
-        filterRemoteData: true,
-        dataType: JSON
+      placeholder: 'e.g. medium income',
+      maxSelections: 5
       });
 
     $('.ui.multiple.dropdown.age').dropdown({
-      maxSelections: 5,
-      fields: { name: "name", value: "value" },
-      apiSettings: {
-        cache: false,
-        onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
-            "success": true,
-            "results": cartoResponse.rows
-          };
-
-          return response;
-
-        },
-        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20age_category%20as%20name,%20age_category' +
-             '%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20age_category' +
-             '%20order%20by%20age_category%20asc',
-        },
-      saveRemoteData: false,
-      filterRemoteData: true,
-      dataType: JSON
+      placeholder: 'e.g. 18-24',
+      maxSelections: 5
     });
 
     $('.ui.multiple.dropdown.children').dropdown({
-      maxSelections: 5,
-      fields: { name: "name", value: "value" },
-      apiSettings: {
-        cache: false,
-        onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
-            "success": true,
-            "results": cartoResponse.rows
-          };
-
-          return response;
-
-        },
-        url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20children_category%20as%20name,' +
-             '%20children_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
-             '%20children_category%20order%20by%20children_category%20asc'
-      },
-      saveRemoteData: false,
-      filterRemoteData: true,
-      dataType: JSON
+      placeholder: 'e.g. more children',
+      maxSelections: 5
     });
 
     $('.ui.multiple.dropdown.dma').dropdown({
+      placeholder: 'search DMA',
       maxSelections: 5,
       fields: { name: "name", value: "value" },
       apiSettings: {
         cache: false,
         onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
+          return {
             "success": true,
             "results": cartoResponse.rows
           };
-
-          return response;
-
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20dma%20as%20name,%20dma%20as%20value%20from' +
              '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20dma%20order%20by%20dma%20asc'
@@ -589,28 +572,16 @@
     });
 
     $('.ui.multiple.dropdown.ethnicity').dropdown({
+      placeholder: 'e.g. white',
       maxSelections: 5,
       fields: { name: "name", value: "value" },
       apiSettings: {
         cache: false,
         onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
+          return {
             "success": true,
             "results": cartoResponse.rows
           };
-
-          return response;
 
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20ethnicity_category%20as%20name,' +
@@ -623,29 +594,16 @@
     });
 
     $('.ui.multiple.dropdown.state').dropdown({
+      placeholder: 'search state',
       maxSelections: 5,
       fields: { name: "name", value: "value" },
       apiSettings: {
         cache: false,
         onResponse: function(cartoResponse) {
-        var response = {
-          results: {}
-        };
-
-        $.each(cartoResponse.rows, function(row) {
-          var i, x = "";
-          for (i in response) {
-            x = response[i];
-          }
-        });
-
-        response = {
-          "success": true,
-          "results": cartoResponse.rows
-        };
-
-        return response;
-
+          return {
+            "success": true,
+            "results": cartoResponse.rows
+          };
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20st_abbrev%20as%20name,%20st_abbrev%20as%20value' +
              '%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
@@ -656,29 +614,16 @@
     });
 
     $('.ui.multiple.dropdown.zip').dropdown({
+      placeholder: 'search zip code',
       maxSelections: 5,
       fields: { name: "name", value: "value" },
       apiSettings: {
         cache: false,
         onResponse: function(cartoResponse) {
-          var response = {
-            results: {}
-          };
-
-          $.each(cartoResponse.rows, function(row) {
-            var i, x = "";
-            for (i in response) {
-              x = response[i];
-            }
-          });
-
-          response = {
+          return {
             "success": true,
             "results": cartoResponse.rows
           };
-
-          return response;
-
         },
         url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20zip%20as%20name,%20zip%20as%20value%20from' +
              '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20zip%20order%20by%20zip%20asc'
