@@ -294,7 +294,7 @@
         for (i = 0; i < distancesSorted.length; i++) {
           var poiBufferCSS = "\
             #layer [ width_category = \"" + distancesSorted[i] + "\"] {\
-              polygon-fill: ramp([brand_label], (" + colorsLegend.join(',') + "), (" + brand + "));\
+              polygon-fill: ramp([brand_label], (" + colorsLegend.join(',') + "), ('" + brand.join("','") + "'));\
               polygon-opacity: " + widthCategoryOpacityLegend[i] + ";\
             }\
             #layer::outline [ width_category = \"" + distancesSorted[i] + "\"] {\
@@ -352,7 +352,7 @@
 
   <!-- SIDEBAR -->
   <div class='app-title'>
-    <h1>ThinkNear Campaign Planner</h1>
+    <h1>Thinknear Campaign Planner</h1>
   </div>
   <div class='app-menu'>
     <div class='app-icon open button'>
@@ -470,7 +470,7 @@
     <br></br>
 
     <div class="ui sidebar inverted vertical menu">
-      <p style="color: #fff;">ThinkNear</p>
+      <p style="color: #fff;">Thinknear</p>
     </div>
 
     <div class="line" />
