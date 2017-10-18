@@ -35,10 +35,8 @@
     height: 50px;
     background-color: white;
     bottom: 0;
-    padding-top: 15px;
-    padding-bottom: 50px;
-    border-top: 2px;
-    border-top-style: groove;
+    padding-top: 20px;
+    padding-bottom: 60px;
   }
 
   /* For Right-Side Toolbar */
@@ -69,8 +67,16 @@
   }
 
   .toolbar-section-title {
-    padding-top: 20px;
-    padding-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    padding-top: 0;
+    margin-bottom:4px;
+  }
+
+  .toolbar-section-title-description {
+    font-size: 12px;
+    padding-bottom: 8px;
+    color: gray;
   }
 
 </style>
@@ -88,7 +94,7 @@
 
     L.control.geocoder('mapzen-XagouUC', {
       focus: true,
-      placeholder: 'Zoom to any US regions, e.g. city, county, state...',
+      placeholder: 'Find your target regions, e.g. city, county, state...',
       position: 'topright',
       params: {
         sources: 'whosonfirst',
@@ -378,18 +384,19 @@
 
   <div id='toolbar'>
 
-    <p class="toolbar-section-title" style="padding-top:0;">Geofencing your point of interest</p>
+    <p class="toolbar-section-title">Locations</p>
+    <p class="toolbar-section-title-description">Geofencing your point of interest</p>
 
-    <p>BRAND</p>
+    <p>Brand</p>
 
     <select id="brand" class="ui multiple search dropdown brand" multiple="">
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>RADIUS</p>
+    <p>Radius</p>
 
-    <select id="distance" class="ui multiple dropdown distance" multiple="">
+    <select id="distance" class="ui multiple search dropdown distance" multiple="">
       <option>500 Meters</option>
       <option>1000 Meters</option>
       <option>1 Mile</option>
@@ -397,34 +404,36 @@
       <option selected>5 Miles</option>
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p class="toolbar-section-title">Geographic - Defining the geographic shapes</p>
+    <p class="toolbar-section-title">Geographic</p>
+    <p class="toolbar-section-title-description">Defining the geographic shapes</p>
 
     <p>DMA</p>
 
     <select id="dma" class="ui multiple search dropdown dma" multiple="">
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>STATE</p>
+    <p>State</p>
 
     <select id="state" class="ui multiple search dropdown state" multiple="">
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>ZIP CODE</p>
+    <p>Zip Code</p>
 
     <select id="zip" class="ui multiple search dropdown zip" multiple="">
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p class="toolbar-section-title">Audience - Targeting home block groups that over-index selected demographics</p>
+    <p class="toolbar-section-title">Audience</p>
+    <p class="toolbar-section-title-description">Targeting home block groups that over-index selected demographics</p>
 
-    <p>INCOME CATEGORY</p>
+    <p>Income Category</p>
 
     <select id="income" class="ui multiple search dropdown income" multiple="">
       <option>LOW INCOME</option>
@@ -433,9 +442,9 @@
       <option>NONE</option>
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>AGE CATEGORY</p>
+    <p>Age Category</p>
 
     <select id="age" class="ui multiple search dropdown age" multiple="">
       <option>AGE 18-24</option>
@@ -445,18 +454,18 @@
       <option>NONE</option>
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>CHILDREN</p>
+    <p>Children</p>
 
     <select id="children" class="ui multiple search dropdown children" multiple="">
       <option>Over-Index for Households with Children</option>
       <option>Under-Index for Households With Children</option>
     </select>
 
-    <br></br>
+    <br><br>
 
-    <p>ETHNICITY</p>
+    <p>Ethnicity</p>
 
     <select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
       <option>AFRICAN AMERICAN</option>
@@ -467,7 +476,7 @@
       <option>NONE</option>
     </select>
 
-    <br></br>
+    <br><br>
 
     <div class="ui sidebar inverted vertical menu">
       <p style="color: #fff;">Thinknear</p>
