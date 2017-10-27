@@ -79,6 +79,11 @@
     color: gray;
   }
 
+  .legend-section-title {
+    font-size: 14px;
+    font-family: Lato;
+  }
+
 </style>
 
 <script>
@@ -167,6 +172,10 @@
         {
           sql: 'SELECT * FROM poi_data_buffers_unioned WHERE cartodb_id < 0',
           cartocss: '#layer { polygon-fill: red; }'
+        },
+        {
+          sql: 'SELECT * FROM poi_data_buffers_with_categories_unioned WHERE cartodb_id < 0',
+          cartocss: '#layer { polygon-fill: green; }'
         }]
       }, { https: true, tooltip: true })
       .addTo(map)
@@ -188,6 +197,8 @@
 
         brandsLayer = layer.getSubLayer(1);
 
+        categoriesLayer = layer.getSubLayer(2);
+
         shapesLayer = layer.getSubLayer(0),
                       layer.getSubLayer(0).setInteraction(true),
                       cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
@@ -206,6 +217,7 @@
 
       var distance = $("#distance").val();
       var brand = $("#brand").val();
+      var category = $("#category").val();
       var income = $("#income").val();
       var age = $("#age").val();
       var dma = $("#dma").val();
@@ -253,10 +265,17 @@
 
       var joinedSQL = listSQL.join(" AND ");
 
-      var brandLegend = brand;
-      var colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#79C753', '#603CC7'];
+      var brandsColorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#79C753', '#603CC7'];
+      var categoriesColorsLegend = ['#8B4D4D', '#0D837F', '#165094', '#98007C', '#5E4D5E', '#A9B45A'];
 
-      function makeLegend(array) {
+      function makeLegendSectionTitle(legendSectionTitle) {
+        var item = document.createElement('p');
+        item.innerHTML = legendSectionTitle;
+        item.setAttribute("class", "legend-section-title");
+        return item;
+      }
+
+      function makeLegend(array, colorsLegend) {
 
         var list = document.createElement('ul');
         list.setAttribute("class", "legend-ul");
@@ -272,7 +291,7 @@
 
           var item = document.createElement('p');
           item.setAttribute("class", "legend-text");
-          item.innerHTML = brandLegend[i];
+          item.innerHTML = array[i];
 
           list.appendChild(span);
           list.appendChild(item);
@@ -284,14 +303,22 @@
 
       var list = document.getElementById('legend-dynamic');
       list.innerHTML = "";
-      list.appendChild(makeLegend(brand));
+
+      if (brand.length > 0) {
+        list.appendChild(makeLegendSectionTitle("Brand"));
+        list.appendChild(makeLegend(brand, brandsColorsLegend));
+      }
+      if (category.length > 0) {
+        list.appendChild(makeLegendSectionTitle("Category"));
+        list.appendChild(makeLegend(category, categoriesColorsLegend));
+      }
 
       var $set = $('ul.legend-ul').children();
       for(var i=0, len = $set.length; i < len; i+=2){
         $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
       }
 
-      function generateWidthCategoriesCartoCSS(distances) {
+      function generateWidthCategoriesCartoCSS(distances, array, column, colorsLegend) {
         var distancesSorted = distances;
         distancesSorted.reverse();
         var finalPoiBuffersCSS = "";
@@ -300,7 +327,7 @@
         for (i = 0; i < distancesSorted.length; i++) {
           var poiBufferCSS = "\
             #layer [ width_category = \"" + distancesSorted[i] + "\"] {\
-              polygon-fill: ramp([brand_label], (" + colorsLegend.join(',') + "), ('" + brand.join("','") + "'));\
+              polygon-fill: ramp([" + column + "], (" + colorsLegend.join(',') + "), ('" + array.join("','") + "'));\
               polygon-opacity: " + widthCategoryOpacityLegend[i] + ";\
             }\
             #layer::outline [ width_category = \"" + distancesSorted[i] + "\"] {\
@@ -327,6 +354,19 @@
           line-opacity: 0.6;\
         }";
 
+      function displayPoiLayers() {
+        brandsLayer.set({
+          'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
+          distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+          'cartocss': generateWidthCategoriesCartoCSS(distance, brand, "brand_label", brandsColorsLegend)
+        });
+        categoriesLayer.set({
+          'sql': "SELECT * FROM poi_buffers_with_categories_500_meters WHERE width_category IN ("+ "'" +
+          distance.join("'" + ',' + "'") + "') AND telenav_category IN ("+ "'" +
+          category.join("'" + ',' + "'") + "')",
+          'cartocss': generateWidthCategoriesCartoCSS(distance, category, "telenav_category", categoriesColorsLegend)
+        });
+      }
 
       if (joinedSQL.length !== 0) {
         shapesLayer.show();
@@ -334,19 +374,11 @@
           'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE " + joinedSQL + "",
           'cartocss': defaultShapeCartocss
         });
-        brandsLayer.set({
-          'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
-                 distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-          'cartocss': generateWidthCategoriesCartoCSS(distance)
-        });
 
+        displayPoiLayers();
       } else { // No Home Block Group Shapes
         shapesLayer.hide();
-        brandsLayer.set({
-          'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN (" + "'" +
-                 distance.join("'" + ',' + "'") + "') AND brand_label IN (" + "'" + brand.join("'" + ',' + "'") + "')",
-          'cartocss': generateWidthCategoriesCartoCSS(distance)
-        });
+        displayPoiLayers();
       }
     });
   }
@@ -390,6 +422,13 @@
     <p>Brand</p>
 
     <select id="brand" class="ui multiple search dropdown brand" multiple="">
+    </select>
+
+    <br><br>
+
+    <p>Category</p>
+
+    <select id="category" class="ui multiple search dropdown category" multiple="">
     </select>
 
     <br><br>
@@ -539,6 +578,27 @@
       filterRemoteData: true,
       dataType: JSON
       });
+
+    $('.ui.multiple.dropdown.category').dropdown({
+      placeholder: 'search category, e.g. Starbucks',
+      maxSelections: 6,
+      fields: { name: "name", value: "value" },
+      apiSettings: {
+        cache: false,
+        onResponse: function(cartoResponse) {
+          return {
+            "success": true,
+            "results": cartoResponse.rows
+          };
+        },
+        url: 'https://thinknear-services.carto.com/api/v2/sql?q=select%20telenav_category%20as%20name,%20' +
+             'telenav_category%20as%20value%20from%20poi_buffers_with_categories_500_meters%20group%20by%20telenav_category%20' +
+             'order%20by%20telenav_category%20asc'
+      },
+      saveRemoteData: false,
+      filterRemoteData: true,
+      dataType: JSON
+    });
 
     $('.ui.multiple.dropdown.distance').dropdown({
       placeholder: 'default to 5 miles',
