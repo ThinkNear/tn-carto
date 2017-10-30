@@ -1,0 +1,104 @@
+* {
+    box-sizing: border-box;
+}
+
+*:focus {
+    outline: none;
+}
+body {
+    font-family: Arial;
+    background-color: #D4D5D6;
+    padding: 50px;
+}
+.login {
+    margin: 20px auto;
+    width: 300px;
+}
+.login-screen {
+    background-color: #FFF;
+    padding: 20px;
+    border-radius: 5px
+}
+
+.login-invalid {
+    color: #E0004D;
+    font-size: 13px;
+}
+
+.app-title {
+    text-align: center;
+    color: #777;
+}
+
+.login-form {
+    text-align: center;
+}
+.control-group {
+    margin-bottom: 10px;
+}
+
+input {
+    text-align: left;
+    background-color: #ECF0F1;
+    border: 7px solid transparent;
+    border-radius: 3px;
+    font-size: 16px;
+    font-weight: 200;
+    padding: 10px 0;
+    width: 250px;
+    transition: border .5s;
+}
+
+input:focus {
+    border: 5px solid transparent;
+    box-shadow: none;
+}
+
+.btn {
+    border: 2px solid transparent;
+    background: #FFC72C;
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 25px;
+    padding: 10px 0;
+    text-decoration: none;
+    text-shadow: none;
+    text-align: center;
+    border-radius: 3px;
+    box-shadow: none;
+    transition: 0.25s;
+    display: block;
+    width: 250px;
+    margin: 0 auto;
+}
+
+.btn:hover {
+    background-color: #FBAD2C;
+}
+
+.btn:active {
+    background-color: #EC9124;
+}
+
+.login-link {
+    font-size: 12px;
+    color: #444;
+    display: block;
+    margin-top: 12px;
+}
+
+.app-icon {
+    background-color: #E4AC37;
+    /*position: relative;*/
+    top: 5px;
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    margin: auto;
+    padding: 10px;
+    background-image: url(/static/img/thinknear-transparent.svg);
+    background-size: 70%;
+    background-repeat: no-repeat;
+    background-position: center;
+
+}
