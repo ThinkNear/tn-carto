@@ -52,8 +52,9 @@
         #visualize-button:active { background-color: #EC9124; }
 
         /* For Filter Select Dropdowns */
-        .ui.multiple.dropdown {
+        .ui.filter {
             width: 300px;
+            margin-bottom: 0;
         }
 
         /* For Geocoder Text Input */
@@ -180,10 +181,10 @@
                               var testTooltip = layer.leafletMap.viz.addOverlay({
                                   type: 'tooltip',
                                   layer: sublayer,
-                                  template: '<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4>' +
-                                            '<h3>RADII</h3><h4>{{width_category}}</h4></div>',
+                                  template: '{% raw %}<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4>' +
+                                            '<h3>RADII</h3><h4>{{width_category}}</h4></div>{% endraw %}',
                                   position: 'top|right',
-                                  fields: [{brand_label: 'brand_label'}]
+                                  fields: [{brand_label: 'brand_label', width_category: 'width_category'}]
                               });
 
                               $('body').append(testTooltip.render().el);
@@ -205,6 +206,9 @@
                                 });
 
             $("#button").click(function() {
+
+                $(".ui.input.zip-form").form("validate form");
+                if ($(".ui.input.zip-form").hasClass('error')) return;
 
                 var distance = $("#distance").val();
                 var brand = $("#brand").val();
@@ -249,7 +253,7 @@
                 }
 
                 if (zip.length > 0) {
-                    var zip_sql = "zip IN ("+ "'" + zip.join("'" + ',' + "'") + "')";
+                    var zip_sql = "zip IN ("+ "'" + zip.split(",").join("'" + ',' + "'") + "')";
                     listSQL.push(zip_sql);
                 }
 
@@ -391,19 +395,19 @@
 
     <p>Brand</p>
 
-    <select id="brand" class="ui multiple search dropdown brand" multiple="">
+    <select id="brand" class="ui filter multiple search dropdown brand" multiple="">
     </select>
 
     <br><br>
 
     <p>Radius</p>
 
-    <select id="distance" class="ui multiple search dropdown distance" multiple="">
+    <select id="distance" class="ui filter multiple search dropdown distance" multiple="">
         <option>500 Meters</option>
         <option>1000 Meters</option>
-        <option>1 Mile</option>
+        <option selected>1 Mile</option>
         <option>3 Miles</option>
-        <option selected>5 Miles</option>
+        <option>5 Miles</option>
     </select>
 
     <br><br>
@@ -413,31 +417,34 @@
 
     <p>DMA</p>
 
-    <select id="dma" class="ui multiple search dropdown dma" multiple="">
+    <select id="dma" class="ui filter multiple search dropdown dma" multiple="">
     </select>
 
     <br><br>
 
     <p>State</p>
 
-    <select id="state" class="ui multiple search dropdown state" multiple="">
+    <select id="state" class="ui filter multiple search dropdown state" multiple="">
     </select>
 
     <br><br>
 
     <p>Zip Code</p>
 
-    <select id="zip" class="ui multiple search dropdown zip" multiple="">
-    </select>
+    <form id="zip-form" class="ui filter text input zip-form">
+        <div class="field">
+            <input type="text" class="ui filter" id="zip" name="zip" placeholder="enter zip code" />
+        </div>
+    </form>
 
     <br><br>
 
     <p class="toolbar-section-title">Audience</p>
     <p class="toolbar-section-title-description">Targeting home block groups that over-index selected demographics</p>
 
-    <p>Income Category</p>
+    <p>Income Range</p>
 
-    <select id="income" class="ui multiple search dropdown income" multiple="">
+    <select id="income" class="ui filter multiple search dropdown income" multiple="">
         <option>LOW INCOME</option>
         <option>MEDIUM INCOME</option>
         <option>HIGH INCOME</option>
@@ -446,9 +453,9 @@
 
     <br><br>
 
-    <p>Age Category</p>
+    <p>Age Range</p>
 
-    <select id="age" class="ui multiple search dropdown age" multiple="">
+    <select id="age" class="ui filter multiple search dropdown age" multiple="">
         <option>AGE 18-24</option>
         <option>AGE 25-34</option>
         <option>AGE 35-54</option>
@@ -460,7 +467,7 @@
 
     <p>Children</p>
 
-    <select id="children" class="ui multiple search dropdown children" multiple="">
+    <select id="children" class="ui filter multiple search dropdown children" multiple="">
         <option>Over-Index for Households with Children</option>
         <option>Under-Index for Households With Children</option>
     </select>
@@ -469,7 +476,7 @@
 
     <p>Ethnicity</p>
 
-    <select id="ethnicity" class="ui multiple search dropdown ethnicity" multiple="">
+    <select id="ethnicity" class="ui filter multiple search dropdown ethnicity" multiple="">
         <option>AFRICAN AMERICAN</option>
         <option>ASIAN</option>
         <option>HISPANIC</option>
@@ -502,6 +509,7 @@
       <a href="#close" class="cartodb-popup-close-button close">x</a>
       <div class="cartodb-popup-content">
         <div class="cartodb-popup-content-wrapper">
+          {% raw %}
           <p class="title">{{st_abbrev}} - {{zip}}</p>
           <h4>AGE</h4>
             <p>{{age_category}}</p>
@@ -513,6 +521,7 @@
             <p>{{ethnicity_category}}</p>
           <h4>DMA</h4>
             <p>{{dma}}</p>
+          {% endraw %}
         </div>
       </div>
     </div>
@@ -522,7 +531,7 @@
 
 <script>
 
-    $('.ui.multiple.dropdown.brand').dropdown({
+    $('.ui.filter.multiple.dropdown.brand').dropdown({
         placeholder: 'search brand name, e.g. Starbucks',
         maxSelections: 6,
         fields: { name: "name", value: "value" },
@@ -542,27 +551,27 @@
         dataType: JSON
     });
 
-    $('.ui.multiple.dropdown.distance').dropdown({
+    $('.ui.filter.multiple.dropdown.distance').dropdown({
         placeholder: 'default to 5 miles',
         maxSelections: 5
     });
 
-    $('.ui.multiple.dropdown.income').dropdown({
+    $('.ui.filter.multiple.dropdown.income').dropdown({
         placeholder: 'e.g. medium income',
         maxSelections: 5
     });
 
-    $('.ui.multiple.dropdown.age').dropdown({
+    $('.ui.filter.multiple.dropdown.age').dropdown({
         placeholder: 'e.g. 18-24',
         maxSelections: 5
     });
 
-    $('.ui.multiple.dropdown.children').dropdown({
+    $('.ui.filter.multiple.dropdown.children').dropdown({
         placeholder: 'e.g. more children',
         maxSelections: 5
     });
 
-    $('.ui.multiple.dropdown.dma').dropdown({
+    $('.ui.filter.multiple.dropdown.dma').dropdown({
         placeholder: 'search DMA',
         maxSelections: 5,
         fields: { name: "name", value: "value" },
@@ -582,7 +591,7 @@
         dataType: JSON
     });
 
-    $('.ui.multiple.dropdown.ethnicity').dropdown({
+    $('.ui.filter.multiple.dropdown.ethnicity').dropdown({
         placeholder: 'e.g. white',
         maxSelections: 5,
         fields: { name: "name", value: "value" },
@@ -604,7 +613,7 @@
         dataType: JSON
     });
 
-    $('.ui.multiple.dropdown.state').dropdown({
+    $('.ui.filter.multiple.dropdown.state').dropdown({
         placeholder: 'search state',
         maxSelections: 5,
         fields: { name: "name", value: "value" },
@@ -624,24 +633,19 @@
         dataType: JSON
     });
 
-    $('.ui.multiple.dropdown.zip').dropdown({
-        placeholder: 'search zip code',
-        maxSelections: 5,
-        fields: { name: "name", value: "value" },
-        apiSettings: {
-            cache: false,
-            onResponse: function(cartoResponse) {
-                return {
-                    "success": true,
-                    "results": cartoResponse.rows
-                };
-            },
-            url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20zip%20as%20name,%20zip%20as%20value%20from' +
-                 '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20zip%20order%20by%20zip%20asc'
-        },
-        saveRemoteData: false,
-        filterRemoteData: true,
-        dataType: JSON
+    $('.ui.filter.text.input.zip-form').form({
+        inline: true,
+        fields: {
+            zip: {
+                identifier: 'zip',
+                rules: [
+                    {
+                        type: 'regExp[/(^$|^(\\d{5})(,\\d{5})*)$/]',
+                        prompt: 'Field must be 5-digit zip codes delimited by commas'
+                    }
+                ]
+            }
+        }
     });
 
     $('.ui.sidebar').sidebar({
