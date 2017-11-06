@@ -82,6 +82,11 @@
             color: gray;
         }
 
+        .legend-section-title {
+            font-size: 14px;
+            font-family: Lato;
+        }
+
     </style>
 
     <script>
@@ -168,50 +173,67 @@
                         cartocss: '#layer { polygon-fill: blue; }'
                     },
                     {
+                        sql: 'SELECT * FROM poi_buffers_unioned_with_categories_indexed WHERE cartodb_id < 0',
+                        cartocss: '#layer { polygon-fill: green; }'
+                    },
+                    {
                         sql: 'SELECT * FROM poi_data_buffers_unioned WHERE cartodb_id < 0',
                         cartocss: '#layer { polygon-fill: red; }'
                     }]
             }, { https: true, tooltip: true })
-                    .addTo(map)
-                    .done(function(layer) {
-                              var sublayer = layer.getSubLayer(1);
-                              sublayer.setInteractivity('brand_label, width_category');
+                .addTo(map)
+                .done(function(layer) {
 
-                              sublayer.setInteraction(true);
-                              var testTooltip = layer.leafletMap.viz.addOverlay({
-                                  type: 'tooltip',
-                                  layer: sublayer,
-                                  template: '{% raw %}<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4>' +
-                                            '<h3>RADII</h3><h4>{{width_category}}</h4></div>{% endraw %}',
-                                  position: 'top|right',
-                                  fields: [{brand_label: 'brand_label', width_category: 'width_category'}]
-                              });
+                    categoriesLayer = layer.getSubLayer(1);
 
-                              $('body').append(testTooltip.render().el);
+                    brandsLayer = layer.getSubLayer(2);
 
-                              brandsLayer = layer.getSubLayer(1);
+                    categoriesLayer.setInteractivity('telenav_category, width_category');
+                    var categoryToolTip = layer.leafletMap.viz.addOverlay({
+                        type: 'tooltip',
+                        layer: categoriesLayer,
+                        template: '{% raw %}<div class="cartodb-tooltip-content-wrapper"><h4>{{telenav_category}}</h4>' +
+                                  '<h3>RADII</h3><h4>{{width_category}}</h4></div>{% endraw %}',
+                        position: 'top|right',
+                        fields: [{telenav_category: 'telenav_category', width_category: 'width_category'}]
+                    });
 
-                              shapesLayer = layer.getSubLayer(0),
-                                      layer.getSubLayer(0).setInteraction(true),
-                                      cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
-                                              ['cartodb_id', 'age_category', 'children_category', 'dma', 'ethnicity_category',
-                                               'income_category', 'st_abbrev', 'zip'],
-                                              { infowindowTemplate: $('#iw_template_2').html() }
-                                      );
+                    brandsLayer.setInteractivity('brand_label, width_category');
+                    brandsLayer.setInteraction(true);
+                    var brandTooltip = layer.leafletMap.viz.addOverlay({
+                        type: 'tooltip',
+                        layer: brandsLayer,
+                        template: '{% raw %}<div class="cartodb-tooltip-content-wrapper"><h4>{{brand_label}}</h4>' +
+                                  '<h3>RADII</h3><h4>{{width_category}}</h4></div>{% endraw %}',
+                        position: 'top|right',
+                        fields: [{brand_label: 'brand_label', width_category: 'width_category'}]
+                    });
 
-                              onShapeClick(map, shapesLayer);
+                    $('body').append(categoryToolTip.render().el);
+                    $('body').append(brandTooltip.render().el);
 
-                          }).on('error', function(err) {
-                                    console.log("an error occured: " + err);
-                                });
+                    shapesLayer = layer.getSubLayer(0),
+                                  layer.getSubLayer(0).setInteraction(true),
+                                  cdb.vis.Vis.addInfowindow(map, layer.getSubLayer(0),
+                                          ['cartodb_id', 'age_category', 'children_category', 'dma',
+                                           'ethnicity_category', 'income_category', 'st_abbrev', 'zip'],
+                                          { infowindowTemplate: $('#iw_template_2').html() }
+                                  );
 
-            $("#button").click(function() {
+                    onShapeClick(map, shapesLayer);
+
+                }).on('error', function(err) {
+                    console.log("an error occured: " + err);
+                });
+
+            $("#visualize-button").click(function() {
 
                 $(".ui.input.zip-form").form("validate form");
                 if ($(".ui.input.zip-form").hasClass('error')) return;
 
                 var distance = $("#distance").val();
                 var brand = $("#brand").val();
+                var category = $("#category").val();
                 var income = $("#income").val();
                 var age = $("#age").val();
                 var dma = $("#dma").val();
@@ -259,10 +281,17 @@
 
                 var joinedSQL = listSQL.join(" AND ");
 
-                var brandLegend = brand;
-                var colorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#79C753', '#603CC7'];
+                var brandsColorsLegend = ['#00AFD7', '#E0004D', '#FFC72C', '#F68D2E', '#79C753', '#795ad0'];
+                var categoriesColorsLegend = [ '#7a5e5e', '#506E6D', '#405D7E', '#764C6F', '#4F515E', '#929673'];
 
-                function makeLegend(array) {
+                function makeLegendSectionTitle(legendSectionTitle) {
+                    var item = document.createElement('p');
+                    item.innerHTML = legendSectionTitle;
+                    item.setAttribute("class", "legend-section-title");
+                    return item;
+                }
+
+                function makeLegend(array, colorsLegend) {
 
                     var list = document.createElement('ul');
                     list.setAttribute("class", "legend-ul");
@@ -278,7 +307,7 @@
 
                         var item = document.createElement('p');
                         item.setAttribute("class", "legend-text");
-                        item.innerHTML = brandLegend[i];
+                        item.innerHTML = array[i];
 
                         list.appendChild(span);
                         list.appendChild(item);
@@ -290,48 +319,59 @@
 
                 var list = document.getElementById('legend-dynamic');
                 list.innerHTML = "";
-                list.appendChild(makeLegend(brand));
+
+                if (brand.length > 0) {
+                    list.appendChild(makeLegendSectionTitle("Brand"));
+                    list.appendChild(makeLegend(brand, brandsColorsLegend));
+                }
+                if (category.length > 0) {
+                    list.appendChild(makeLegendSectionTitle("Category"));
+                    list.appendChild(makeLegend(category, categoriesColorsLegend));
+                }
 
                 var $set = $('ul.legend-ul').children();
                 for(var i=0, len = $set.length; i < len; i+=2){
                     $set.slice(i, i+2).wrapAll("<li class='legend-list'>");
                 }
 
-                function generateWidthCategoriesCartoCSS(distances) {
-                    var distancesSorted = distances;
-                    distancesSorted.reverse();
-                    var finalPoiBuffersCSS = "";
-                    var widthCategoryOpacityLegend = [0.4, 0.5, 0.6, 0.7];
-
-                    for (i = 0; i < distancesSorted.length; i++) {
-                        var poiBufferCSS = "\
-            #layer [ width_category = \"" + distancesSorted[i] + "\"] {\
-              polygon-fill: ramp([brand_label], (" + colorsLegend.join(',') + "), ('" + brand.join("','") + "'));\
-              polygon-opacity: " + widthCategoryOpacityLegend[i] + ";\
-            }\
-            #layer::outline [ width_category = \"" + distancesSorted[i] + "\"] {\
-              line-width: 1px;\
-              line-color: #FFF;\
-              line-opacity: 0.5;\
-            }";
-
-                        finalPoiBuffersCSS = finalPoiBuffersCSS + poiBufferCSS;
-
-                    }
-
-                    return finalPoiBuffersCSS;
+                function generatePoiCartoCSS(array, column, colorsLegend, opacity) {
+                    return "\
+                        #layer {\
+                          polygon-fill: ramp([" + column + "], (" + colorsLegend.join(',') + "), ('" + array.join("','") + "'));\
+                          polygon-opacity: " + opacity + ";\
+                          polygon-comp-op: hard-light\
+                        }\
+                        #layer::outline {\
+                          line-width: 1px;\
+                          line-color: #FFF;\
+                          line-opacity: 0.5;\
+                        }";
                 }
 
                 var defaultShapeCartocss = "\
-        #layer {\
-          polygon-fill: #ABADAF;\
-          opacity: 0.4;\
-        }\
-        #layer::outline {\
-          line-width: 1px;\
-          line-color: #ABADAF;\
-          line-opacity: 0.6;\
-        }";
+                    #layer {\
+                      polygon-fill: #ABADAF;\
+                      opacity: 0.3;\
+                    }\
+                    #layer::outline {\
+                      line-width: 1px;\
+                      line-color: #ABADAF;\
+                      line-opacity: 0.4;\
+                    }";
+
+                function displayPoiLayers() {
+                    categoriesLayer.set({
+                        'sql': "SELECT * FROM poi_buffers_unioned_with_categories_indexed WHERE width_category IN ("+ "'" +
+                            distance.join("'" + ',' + "'") + "') AND telenav_category IN ("+ "'" +
+                            category.join("'" + ',' + "'") + "')",
+                        'cartocss': generatePoiCartoCSS(category, "telenav_category", categoriesColorsLegend, 0.3)
+                    });
+                    brandsLayer.set({
+                        'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
+                            distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
+                        'cartocss': generatePoiCartoCSS(brand, "brand_label", brandsColorsLegend, 0.5)
+                    });
+                }
 
 
                 if (joinedSQL.length !== 0) {
@@ -340,19 +380,11 @@
                         'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE " + joinedSQL + "",
                         'cartocss': defaultShapeCartocss
                     });
-                    brandsLayer.set({
-                        'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
-                               distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-                        'cartocss': generateWidthCategoriesCartoCSS(distance)
-                    });
+                    displayPoiLayers();
 
                 } else { // No Home Block Group Shapes
                     shapesLayer.hide();
-                    brandsLayer.set({
-                        'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN (" + "'" +
-                               distance.join("'" + ',' + "'") + "') AND brand_label IN (" + "'" + brand.join("'" + ',' + "'") + "')",
-                        'cartocss': generateWidthCategoriesCartoCSS(distance)
-                    });
+                    displayPoiLayers();
                 }
             });
         }
@@ -396,6 +428,13 @@
     <p>Brand</p>
 
     <select id="brand" class="ui filter multiple search dropdown brand" multiple="">
+    </select>
+
+    <br><br>
+
+    <p>Category</p>
+
+    <select id="category" class="ui filter multiple search dropdown category" multiple="">
     </select>
 
     <br><br>
@@ -494,11 +533,9 @@
     <div class="line" />
 
     <div id="fixed-button">
-        <p id="button" class="button">
-            <button id="visualize-button" class="ui primary button btn">
-                <a style="color:white;" href="#">VISUALIZE</a>
-            </button>
-        </p>
+        <button id="visualize-button" class="ui primary button btn">
+            <a style="color:white;" href="#">VISUALIZE</a>
+        </button>
     </div>
 </div>
 
@@ -551,8 +588,29 @@
         dataType: JSON
     });
 
-    $('.ui.filter.multiple.dropdown.distance').dropdown({
-        placeholder: 'default to 5 miles',
+    $('.ui.filter.multiple.dropdown.category').dropdown({
+        placeholder: 'search category, e.g. ',
+        maxSelections: 6,
+        fields: { name: "name", value: "value" },
+        apiSettings: {
+            cache: false,
+            onResponse: function(cartoResponse) {
+                return {
+                    "success": true,
+                    "results": cartoResponse.rows
+                };
+            },
+            url: 'https://thinknear-services.carto.com/api/v2/sql?q=select%20telenav_category%20as%20name,%20' +
+                 'telenav_category%20as%20value%20from%20poi_buffers_unioned_with_categories_indexed%20group%20by%20' +
+                 'telenav_category%20order%20by%20telenav_category%20asc'
+        },
+        saveRemoteData: false,
+        filterRemoteData: true,
+        dataType: JSON
+    });
+
+    $('.ui.multiple.dropdown.distance').dropdown({
+        placeholder: 'default to 1 mile',
         maxSelections: 5
     });
 
