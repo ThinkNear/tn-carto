@@ -125,9 +125,9 @@
                 /* Leaflet JS Stylings */
                 var onClickShapeCSS = {
                     fillColor: '#ABADAF',
-                    fillOpacity: 0.5,
+                    fillOpacity: 0.75,
                     color: '#ABADAF',
-                    opacity: 0.6,
+                    opacity: 0.75,
                     weight: 1
                 };
 
@@ -351,12 +351,12 @@
                 var defaultShapeCartocss = "\
                     #layer {\
                       polygon-fill: #ABADAF;\
-                      opacity: 0.3;\
+                      opacity: 0.7;\
                     }\
                     #layer::outline {\
                       line-width: 1px;\
                       line-color: #ABADAF;\
-                      line-opacity: 0.4;\
+                      line-opacity: 0.7;\
                     }";
 
                 function displayPoiLayers() {
@@ -364,12 +364,12 @@
                         'sql': "SELECT * FROM poi_buffers_unioned_with_categories_indexed WHERE width_category IN ("+ "'" +
                             distance.join("'" + ',' + "'") + "') AND telenav_category IN ("+ "'" +
                             category.join("'" + ',' + "'") + "')",
-                        'cartocss': generatePoiCartoCSS(category, "telenav_category", categoriesColorsLegend, 0.3)
+                        'cartocss': generatePoiCartoCSS(category, "telenav_category", categoriesColorsLegend, 0.5)
                     });
                     brandsLayer.set({
                         'sql': "SELECT * FROM poi_data_buffers_unioned WHERE width_category IN ("+ "'" +
                             distance.join("'" + ',' + "'") + "') AND brand_label IN ("+ "'" + brand.join("'" + ',' + "'") + "')",
-                        'cartocss': generatePoiCartoCSS(brand, "brand_label", brandsColorsLegend, 0.5)
+                        'cartocss': generatePoiCartoCSS(brand, "brand_label", brandsColorsLegend, 0.6)
                     });
                 }
 
