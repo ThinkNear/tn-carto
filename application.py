@@ -6,6 +6,8 @@ import os
 USERNAME = os.getenv('LOGIN_USERNAME', 'admin')
 PASSWORD = os.getenv('LOGIN_PASSWORD', 'thinknear')
 PORT = int(os.getenv('PORT', 8080))
+# Set this to True in the console to enter flask Debug Mode
+DEBUG_FLAG = os.getenv('DEBUG', False)
 
 application = Flask(__name__)
 application.secret_key = os.urandom(12)
@@ -55,5 +57,4 @@ def do_login():
 
 if __name__ == "__main__":
     # Swap below to debug locally
-    # application.run(port=PORT, debug=True)
-    application.run(port=PORT)
+    application.run(port=PORT, debug=DEBUG_FLAG)
