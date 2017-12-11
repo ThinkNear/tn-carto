@@ -138,7 +138,7 @@
                 function featureClick(e, pos, latlng, data) {
                     if (shapeClicked.cartodb_id !== data.cartodb_id) {
                         var sql = new cartodb.SQL({ user: cartoUserName, format: 'geojson' });
-                        sql.execute("SELECT cartodb_id, the_geom FROM esri_block_group_shapes_simplified_demo_indexed " +
+                        sql.execute("SELECT cartodb_id, the_geom FROM esri_block_group_shapes_simplified_demo_indexed_v2 " +
                                     "WHERE cartodb_id = " + data.cartodb_id).done(function(geojson) {
                             if (geojson.features.length > 0) {
                                 var features = geojson.features[0];
@@ -169,7 +169,7 @@
                 type: 'carto',
                 sublayers: [
                     {
-                        sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE cartodb_id < 0',
+                        sql: 'SELECT * FROM esri_block_group_shapes_simplified_demo_indexed_v2 WHERE cartodb_id < 0',
                         cartocss: '#layer { polygon-fill: blue; }'
                     },
                     {
@@ -377,7 +377,7 @@
                 if (joinedSQL.length !== 0) {
                     shapesLayer.show();
                     shapesLayer.set({
-                        'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_indexed WHERE " + joinedSQL + "",
+                        'sql': "SELECT * FROM esri_block_group_shapes_simplified_demo_indexed_v2 WHERE " + joinedSQL + "",
                         'cartocss': defaultShapeCartocss
                     });
                     displayPoiLayers();
@@ -497,7 +497,8 @@
     <select id="age" class="ui filter multiple search dropdown age" multiple="">
         <option>AGE 18-24</option>
         <option>AGE 25-34</option>
-        <option>AGE 35-54</option>
+        <option>AGE 35-44</option>
+        <option>AGE 45-54</option>
         <option>AGE 55 or Greater</option>
         <option>NONE</option>
     </select>
@@ -642,7 +643,7 @@
                 };
             },
             url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20dma%20as%20name,%20dma%20as%20value%20from' +
-                 '%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20dma%20order%20by%20dma%20asc'
+                 '%20esri_block_group_shapes_simplified_demo_indexed_v2%20group%20by%20dma%20order%20by%20dma%20asc'
         },
         saveRemoteData: false,
         filterRemoteData: true,
@@ -651,24 +652,7 @@
 
     $('.ui.filter.multiple.dropdown.ethnicity').dropdown({
         placeholder: 'e.g. white',
-        maxSelections: 5,
-        fields: { name: "name", value: "value" },
-        apiSettings: {
-            cache: false,
-            onResponse: function(cartoResponse) {
-                return {
-                    "success": true,
-                    "results": cartoResponse.rows
-                };
-
-            },
-            url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20ethnicity_category%20as%20name,' +
-                 '%20ethnicity_category%20as%20value%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by' +
-                 '%20ethnicity_category%20order%20by%20ethnicity_category%20asc'
-        },
-        saveRemoteData: false,
-        filterRemoteData: true,
-        dataType: JSON
+        maxSelections: 5
     });
 
     $('.ui.filter.multiple.dropdown.state').dropdown({
@@ -684,7 +668,7 @@
                 };
             },
             url: 'https://thinknear-services.carto.com/api/v2/sql?q=SELECT%20st_abbrev%20as%20name,%20st_abbrev%20as%20value' +
-                 '%20from%20esri_block_group_shapes_simplified_demo_indexed%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
+                 '%20from%20esri_block_group_shapes_simplified_demo_indexed_v2%20group%20by%20st_abbrev%20order%20by%20st_abbrev%20asc'
         },
         saveRemoteData: false,
         filterRemoteData: true,
