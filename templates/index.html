@@ -298,9 +298,6 @@
 
                     for(var i = 0; i < array.length; i++) {
 
-                        var main = document.getElementById('legend-main');
-                        main.setAttribute("style", "display: initial");
-
                         var span = document.createElement('span');
                         span.setAttribute("class", "legend-circle");
                         span.setAttribute("style", "background-color: " + colorsLegend[i] + "");
@@ -315,6 +312,13 @@
                     }
 
                     return list;
+                }
+
+                var main = document.getElementById('legend-main');
+                if (brand.length === 0 && category.length === 0) {
+                    main.setAttribute("style", "display: none");
+                } else {
+                    main.setAttribute("style", "display: initial");
                 }
 
                 var list = document.getElementById('legend-dynamic');
